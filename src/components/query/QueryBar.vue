@@ -11,23 +11,6 @@
       >{{ item.label }}</button>
     </div>
     <div class="fields">
-      <label v-if="showProvince" class="field">
-        <span>省区</span>
-        <el-select
-          v-model="store.province"
-          class="field-select"
-          placeholder="请选择"
-          clearable
-          popper-class="query-bar-select-dropdown"
-        >
-          <el-option
-            v-for="item in provinces"
-            :key="item"
-            :label="item"
-            :value="item"
-          />
-        </el-select>
-      </label>
       <label v-if="showLine" class="field">
         <span>条线</span>
         <el-select
@@ -39,6 +22,23 @@
         >
           <el-option
             v-for="item in businessLines"
+            :key="item"
+            :label="item"
+            :value="item"
+          />
+        </el-select>
+      </label>
+      <label v-if="showProvince" class="field">
+        <span>省区</span>
+        <el-select
+          v-model="store.province"
+          class="field-select"
+          placeholder="请选择"
+          clearable
+          popper-class="query-bar-select-dropdown"
+        >
+          <el-option
+            v-for="item in provinces"
             :key="item"
             :label="item"
             :value="item"
@@ -63,14 +63,14 @@
         </el-select>
       </label>
       <label class="field">
-        <span>日期</span>
+        <span>月</span>
         <el-date-picker
           v-model="store.timeRange"
           class="field-select"
-          type="date"
+          type="month"
           placeholder="请选择"
-          format="yyyy年MM月dd日"
-          value-format="yyyy-MM-dd"
+          format="yyyy年MM月"
+          value-format="yyyy-MM-01"
           clearable
           popper-class="query-bar-date-dropdown"
         />
@@ -100,7 +100,7 @@ export default {
   },
   computed: {
     showProvince() {
-      return this.store.orgLevel === 'province'
+      return this.store.orgLevel === 'province' || this.store.orgLevel === 'line'
     },
     showLine() {
       return this.store.orgLevel === 'line'

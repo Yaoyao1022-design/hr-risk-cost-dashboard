@@ -42,14 +42,22 @@
         @input="actions.setDrillTab($event)"
       />
 
-      <rank-card-list
-        v-if="store.drillTab === 'org'"
-        variant="multi"
-        :items="orgRanks"
-        :expanded-index="expandedOrg"
-        @toggle="toggleOrg"
-        @export="onOrgExport"
-      />
+      <div v-if="store.drillTab === 'org'" class="org-block">
+        <rank-card-list
+          variant="multi"
+          :items="orgRanks"
+          :expanded-index="expandedOrg"
+          @toggle="toggleOrg"
+          @export="onOrgExport"
+        />
+        <div v-if="hasMoreOrgs" class="org-more">
+          <board-action
+            kind="expand"
+            text="查看更多组织"
+            @click="loadMoreOrgs"
+          />
+        </div>
+      </div>
 
       <template v-else-if="store.drillTab === 'scene'">
         <div class="scene-row">
@@ -136,7 +144,9 @@ export default {
       actions,
       drillTabs,
       expandedOrg: [0],
-      expandedScene: [0]
+      expandedScene: [0],
+      orgPageSize: 5,
+      orgVisibleCount: 5
     }
   },
   computed: {
@@ -163,8 +173,21 @@ export default {
     chartLabels() {
       return dateLabels(store)
     },
-    orgRanks() {
+    orgAllRanks() {
       return withSeed(orgRankItems, store)
+    },
+    orgRanks() {
+      return this.orgAllRanks.slice(0, this.orgVisibleCount).map((item) => ({
+        ...item,
+        children: (item.children || []).map((child) => ({
+          ...child,
+          label: '',
+          labelTone: undefined
+        }))
+      }))
+    },
+    hasMoreOrgs() {
+      return this.orgVisibleCount < this.orgAllRanks.length
     },
     sceneCardItems() {
       return withSeed(sceneCards, store)
@@ -187,9 +210,37 @@ export default {
   watch: {
     'store.scene'() {
       this.expandedScene = [0]
+    },
+    'store.drillTab'(tab) {
+      if (tab === 'org') this.resetOrgPaging()
+    },
+    'store.queryNonce'() {
+      this.resetOrgPaging()
+    },
+    'store.orgLevel'() {
+      this.resetOrgPaging()
     }
   },
   methods: {
+    resetOrgPaging() {
+      this.orgVisibleCount = this.orgPageSize
+      this.expandedOrg = [0]
+    },
+    loadMoreOrgs() {
+      if (!this.hasMoreOrgs) return
+      const prevCount = this.orgVisibleCount
+      this.orgVisibleCount = Math.min(
+        this.orgVisibleCount + this.orgPageSize,
+        this.orgAllRanks.length
+      )
+      this.$nextTick(() => {
+        const wraps = this.$el.querySelectorAll('.org-block .rank-card-wrap')
+        const target = wraps[prevCount]
+        if (target && typeof target.scrollIntoView === 'function') {
+          target.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }
+      })
+    },
     toggleOrg(index) {
       const next = this.expandedOrg.slice()
       const pos = next.indexOf(index)
@@ -337,6 +388,16 @@ export default {
   width: 100%;
 }
 .person-more {
+  display: flex;
+  justify-content: center;
+}
+.org-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+.org-more {
   display: flex;
   justify-content: center;
 }

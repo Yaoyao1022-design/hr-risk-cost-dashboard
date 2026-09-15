@@ -4,7 +4,8 @@
       <div class="detail-head">
         <board-title :text="detailTitle" :level="1" />
         <capsule-tabs
-          :options="laborDetailSliceOptions"
+          v-if="store.orgLevel !== 'line'"
+          :options="mapSliceOptions"
           :value="slice"
           @input="slice = $event"
         />
@@ -16,12 +17,19 @@
         </div>
         <div class="map-side">
           <ai-summary :text="summaryText" />
-          <board-radio-group
-            class="map-metric-radios"
-            :options="laborMapMetricOptions"
-            :value="mapMetric"
-            @input="mapMetric = $event"
-          />
+          <div class="map-metric-row">
+            <capsule-tabs
+              :options="mapScopeOptions"
+              :value="mapScope"
+              @input="mapScope = $event"
+            />
+            <board-radio-group
+              class="map-metric-radios"
+              :options="laborMapMetricOptions"
+              :value="mapMetric"
+              @input="mapMetric = $event"
+            />
+          </div>
           <rank-list
             :columns="cityRankColumns"
             :rows="cityRankRows"
@@ -82,6 +90,9 @@
           <div class="map-side">
             <ai-summary :text="c1Summary" />
             <board-table
+              class="c1-rate-table"
+              :scrollable="false"
+              :sticky-name="false"
               :name-title="c1Slice === 'dept' ? '二级部门' : '条线'"
               :columns="laborRateColumns"
               :rows="c1TableRows"
@@ -92,19 +103,41 @@
 
       <section class="block">
         <div class="detail-head">
-          <board-title text="部门及条线详情（C1视角-预算管控部分）" :level="1" />
-          <div class="head-tabs">
+          <board-title text="部门及条线详情（C1视角-费率管控部分 非运营）" :level="1" />
+          <capsule-tabs
+            :options="laborDetailSliceOptions"
+            :value="c1NonOpsSlice"
+            @input="c1NonOpsSlice = $event"
+          />
+        </div>
+        <div class="c1-table-only">
+          <ai-summary :text="c1Summary" />
+          <board-table
+            class="c1-rate-table"
+            :scrollable="false"
+            :sticky-name="false"
+            :name-title="c1NonOpsSlice === 'dept' ? '二级部门' : '条线'"
+            :columns="laborRateColumns"
+            :rows="c1NonOpsTableRows"
+          />
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="detail-head">
+          <div class="detail-head__left">
+            <board-title text="部门及条线详情（C1视角-预算管控部分）" :level="1" />
             <capsule-tabs
               :options="budgetPeriodOptions"
               :value="budgetPeriod"
               @input="budgetPeriod = $event"
             />
-            <capsule-tabs
-              :options="budgetTypeOptions"
-              :value="budgetType"
-              @input="budgetType = $event"
-            />
           </div>
+          <capsule-tabs
+            :options="budgetTypeOptions"
+            :value="budgetType"
+            @input="budgetType = $event"
+          />
         </div>
         <div class="budget-split">
           <div class="budget-cards">
@@ -138,7 +171,7 @@
               variant="multi-line"
               plot-size="md"
               fill
-              :seed="chartSeed"
+              :seed="budgetChartSeed"
               :labels="chartLabels"
             />
           </div>
@@ -173,8 +206,10 @@ export default {
       laborMapMetricOptions,
       laborRateColumns,
       slice: 'province',
+      mapScope: 'ytd',
       mapMetric: 'l1l2',
       c1Slice: 'province',
+      c1NonOpsSlice: 'province',
       budgetPeriod: 'year',
       budgetType: 'cost',
       budgetPeriodOptions: [
@@ -193,18 +228,43 @@ export default {
         mapMetric: this.mapMetric,
         slice: this.slice,
         c1Slice: this.c1Slice,
+        metricScope: this.mapScope,
+        scope: this.mapScope
+      }
+    },
+    budgetSeed() {
+      return {
+        ...this.extraSeed,
         budgetPeriod: this.budgetPeriod,
         budgetType: this.budgetType
       }
     },
+    mapScopeOptions() {
+      const labels = periodLabels(store)
+      return [
+        { label: labels.ytd + '指标', value: 'ytd' },
+        { label: labels.month + '指标', value: 'month' }
+      ]
+    },
     chartSeed() {
       return demoSeed(store, this.extraSeed)
+    },
+    budgetChartSeed() {
+      return demoSeed(store, this.budgetSeed)
     },
     chartLabels() {
       return dateLabels(store)
     },
     isMapPerspective() {
       return store.orgLevel === 'hq' || store.orgLevel === 'line'
+    },
+    deptSliceLabel() {
+      return store.orgLevel === 'hq' ? '一级部门' : '二级部门'
+    },
+    mapSliceOptions() {
+      return laborDetailSliceOptions.map((item) => (
+        item.value === 'dept' ? { ...item, label: this.deptSliceLabel } : item
+      ))
     },
     detailTitle() {
       return store.orgLevel === 'line'
@@ -225,10 +285,11 @@ export default {
       return laborDetailSummaries.c1
     },
     cityRankColumns() {
+      const isLine = store.orgLevel === 'line'
       return [
         { key: 'rank', title: '排序' },
-        { key: 'rate', title: '综合费率' },
-        { key: 'yoy', title: '同比', trend: true }
+        { key: 'rate', title: isLine ? '当月费率' : '综合费率' },
+        { key: 'yoy', title: isLine ? '当月同比' : '同比', trend: true }
       ]
     },
     cityRankRows() {
@@ -244,11 +305,10 @@ export default {
       return withSeed(laborLineTableRows, store, this.extraSeed)
     },
     budgetCards() {
-      const cards = withSeed(laborBudgetCards, store, this.extraSeed)
+      const cards = withSeed(laborBudgetCards, store, this.budgetSeed)
       const labels = periodLabels(store)
-      const keepYtd = this.budgetPeriod === 'year'
       return cards.map((card) => {
-        let groups = card.groups.map((group) => {
+        const groups = card.groups.map((group) => {
           const title = group.title.includes('YTD')
             ? labels.ytd
             : group.title.includes('MTD')
@@ -262,14 +322,11 @@ export default {
           })
           return { ...group, title, items }
         })
-        if (card.groups.length > 1) {
-          // 年：YTD + 月；月：MTD + 月，两列数量保持一致
-          groups = groups.filter((group) => (
-            keepYtd ? !group.title.includes('MTD') : !group.title.includes('YTD')
-          ))
-          if (!keepYtd) groups = groups.reverse()
+        return {
+          ...card,
+          title: this.budgetType === 'hc' && card.title === '成本监控' ? '编制监控' : card.title,
+          groups
         }
-        return { ...card, title: this.budgetType === 'hc' && card.title === '成本监控' ? '编制监控' : card.title, groups }
       })
     },
     mapRegions() {
@@ -285,31 +342,40 @@ export default {
     },
     deptRankColumns() {
       return [
-        { key: 'name', title: '二级部门' },
+        { key: 'name', title: this.deptSliceLabel },
         { key: 'rate', title: '综合费率' },
         { key: 'yoy', title: '同比', trend: true }
       ]
     },
     efficiencyRankColumns() {
       return [
-        { key: 'name', title: '二级部门' },
+        { key: 'name', title: this.deptSliceLabel },
         { key: 'rate', title: '效率值' },
         { key: 'yoy', title: '同比', trend: true }
       ]
     },
     c1TableRows() {
-      const rows = this.lineTableRows
-      if (this.c1Slice !== 'dept') return rows
-      return rows.map((row) => ({
-        ...row,
-        name: row.name.replace(/^\[.*?\]/, '').replace('运配', '运营部') || row.name
-      }))
+      return this.buildC1TableRows(this.c1Slice)
+    },
+    c1NonOpsTableRows() {
+      return this.buildC1TableRows(this.c1NonOpsSlice)
     }
   },
   watch: {
     'store.orgLevel'() {
       this.slice = 'province'
       this.c1Slice = 'province'
+      this.c1NonOpsSlice = 'province'
+    }
+  },
+  methods: {
+    buildC1TableRows(slice) {
+      const rows = this.lineTableRows
+      if (slice !== 'dept') return rows
+      return rows.map((row) => ({
+        ...row,
+        name: row.name.replace(/^\[.*?\]/, '').replace('运配', '运营部') || row.name
+      }))
     }
   }
 }
@@ -332,6 +398,17 @@ export default {
   justify-content: space-between;
   gap: 12px;
   min-height: 32px;
+}
+.detail-head__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.detail-head__left >>> .board-title {
+  flex: 0 1 auto;
+  min-width: 0;
 }
 .detail-head >>> .board-title {
   flex: 1 1 auto;
@@ -389,8 +466,44 @@ export default {
   gap: 8px;
   min-width: 0;
 }
+.c1-table-only {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.c1-rate-table {
+  --board-table-min: 0;
+  --board-name-col: 88px;
+  --board-metric-min: 0;
+  --board-row-gap: 8px;
+  --board-row-padding-x: 8px;
+  width: 100%;
+  min-width: 0;
+}
+.c1-rate-table >>> .board-table__inner {
+  min-width: 0;
+  width: 100%;
+}
+.c1-rate-table >>> .cell {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.c1-rate-table >>> .name-text,
+.c1-rate-table >>> .cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.map-metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
 .map-metric-radios {
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 .dept-split {
   display: grid;

@@ -20,13 +20,24 @@
         <app-detail-drawers />
       </div>
     </el-page-layout>
+    <novice-guide
+      v-if="currentScreen === 'cockpit'"
+      :active="currentScreen === 'cockpit'"
+      :get-targets="getGuideTargets"
+      @show="onGuideShow"
+      @hide="onGuideHide"
+      @dismiss="onGuideDismiss"
+      @highlight="onGuideHighlight"
+    />
   </div>
 </template>
 
 <script>
 import { navMenuData } from '@/config/nav-menu'
+import { actions } from '@/store'
 import Dashboard from '@/views/Dashboard.vue'
 import AppDetailDrawers from '@/components/detail/AppDetailDrawers.vue'
+import NoviceGuide from '@/components/guide/NoviceGuide.vue'
 import logo from '@/assets/images/logo.png'
 import userAvatar from '@/assets/icons/icon-user.svg'
 
@@ -48,7 +59,7 @@ function screenFromLocation() {
 
 export default {
   name: 'App',
-  components: { Dashboard, AppDetailDrawers },
+  components: { Dashboard, AppDetailDrawers, NoviceGuide },
   data() {
     return {
       navMenuData,
@@ -84,6 +95,34 @@ export default {
       const next = SCREEN_MAP[screen] ? screen : 'cockpit'
       this.currentScreen = next
       if (typeof location !== 'undefined') location.hash = '/' + next
+    },
+    getGuideTargets() {
+      const cards = document.querySelectorAll('.dashboard .switch-card.is-large')
+      return Array.from(cards).map((el) => {
+        const rect = el.getBoundingClientRect()
+        return {
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          right: rect.right,
+          bottom: rect.bottom
+        }
+      })
+    },
+    onGuideShow() {
+      actions.setGuideActive(true)
+      actions.setTheme('labor')
+    },
+    onGuideHide() {
+      actions.setGuideActive(false)
+    },
+    onGuideHighlight(index) {
+      actions.setGuideCardIndex(index)
+    },
+    onGuideDismiss() {
+      actions.setGuideActive(false)
+      actions.setTheme('labor')
     },
     onAction(type, payload) {
       if (type === 'menu-select' && payload && payload.item) {

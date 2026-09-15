@@ -17,10 +17,13 @@ export const store = Vue.observable({
   queryNonce: 0,
   sidebarCollapsed: false,
   metricDetailOpen: false,
+  laborCostOpen: false,
   personDetailOpen: false,
   personExceptionOpen: false,
   orgFullDetailOpen: false,
   aiReportOpen: false,
+  guideActive: false,
+  guideCardIndex: 0,
   selectedPerson: null,
   selectedOrgItem: null,
   selectedAiReport: null
@@ -30,6 +33,7 @@ export const actions = {
   setTheme(theme) {
     store.theme = theme
     store.metricDetailOpen = false
+    store.laborCostOpen = false
     store.personDetailOpen = false
     store.personExceptionOpen = false
     store.orgFullDetailOpen = false
@@ -45,12 +49,29 @@ export const actions = {
     store.drillTab = tab
   },
   openMetricDetail() {
+    store.laborCostOpen = false
+    store.personDetailOpen = false
+    store.personExceptionOpen = false
+    store.orgFullDetailOpen = false
+    store.aiReportOpen = false
     store.metricDetailOpen = true
   },
   closeMetricDetail() {
     store.metricDetailOpen = false
   },
+  openLaborCost() {
+    store.metricDetailOpen = false
+    store.personDetailOpen = false
+    store.personExceptionOpen = false
+    store.orgFullDetailOpen = false
+    store.aiReportOpen = false
+    store.laborCostOpen = true
+  },
+  closeLaborCost() {
+    store.laborCostOpen = false
+  },
   openPersonDetail() {
+    store.laborCostOpen = false
     store.personExceptionOpen = false
     store.orgFullDetailOpen = false
     store.aiReportOpen = false
@@ -62,6 +83,7 @@ export const actions = {
     store.personDetailOpen = false
   },
   openPersonException(person) {
+    store.laborCostOpen = false
     store.personDetailOpen = false
     store.orgFullDetailOpen = false
     store.aiReportOpen = false
@@ -74,6 +96,7 @@ export const actions = {
     store.selectedPerson = null
   },
   openOrgFullDetail(orgItem) {
+    store.laborCostOpen = false
     store.personDetailOpen = false
     store.personExceptionOpen = false
     store.aiReportOpen = false
@@ -86,6 +109,7 @@ export const actions = {
     store.selectedOrgItem = null
   },
   openAiReport(report) {
+    store.laborCostOpen = false
     store.personDetailOpen = false
     store.personExceptionOpen = false
     store.orgFullDetailOpen = false
@@ -97,5 +121,15 @@ export const actions = {
   closeAiReport() {
     store.aiReportOpen = false
     store.selectedAiReport = null
+  },
+  setGuideActive(active) {
+    store.guideActive = !!active
+    if (store.guideActive) {
+      store.guideCardIndex = 0
+    }
+  },
+  setGuideCardIndex(index) {
+    if (!store.guideActive) return
+    store.guideCardIndex = index === 1 ? 1 : 0
   }
 }

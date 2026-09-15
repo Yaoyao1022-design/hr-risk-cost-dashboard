@@ -17,6 +17,8 @@
       </template>
     </data-detail-drawer>
 
+    <labor-cost-breakdown-drawer />
+
     <data-detail-drawer
       inline
       :visible="store.personExceptionOpen"
@@ -68,7 +70,7 @@
               flat
               :show-action="!orgFullIsPersonLevel"
               :action-show-icon="false"
-              action-text="详情"
+              action-text="下探"
               action-title="操作"
               :name-title="orgFullNameTitle"
               :columns="orgFullTableColumns"
@@ -107,8 +109,8 @@
         <board-table
           class="person-detail-table"
           flat
-          name-title="员工姓名"
-          :columns="leakPersonDetailColumns"
+          name-title="排序"
+          :columns="personDetailColumns"
           :rows="personTableRows"
         />
       </template>
@@ -130,14 +132,15 @@ import {
   downloadAiReportFile
 } from '@/mock/data'
 import { periodLabels, withSeed } from '@/mock/simulate'
+import LaborCostBreakdownDrawer from '@/components/detail/LaborCostBreakdownDrawer.vue'
 
 export default {
   name: 'AppDetailDrawers',
+  components: { LaborCostBreakdownDrawer },
   data() {
     return {
       store,
       actions,
-      leakPersonDetailColumns,
       leakPersonExceptionColumns,
       orgFullDrillIndex: 0,
       orgFullPath: []
@@ -208,8 +211,15 @@ export default {
     orgFullBreadcrumbIndex() {
       return this.orgFullBreadcrumbItems.length - 1
     },
+    personDetailColumns() {
+      return [{ key: 'personName', title: '员工姓名' }].concat(leakPersonDetailColumns)
+    },
     personTableRows() {
-      return withSeed(leakPersonDetailRows, store)
+      return withSeed(leakPersonDetailRows, store).map((row, index) => ({
+        ...row,
+        personName: row.name,
+        name: String(index + 1)
+      }))
     },
     aiReportDetail() {
       return buildAiReportDetail(store.selectedAiReport || {})
@@ -295,6 +305,22 @@ export default {
   width: 100%;
   min-width: 0;
   max-width: 100%;
+}
+.person-detail-table >>> .cell,
+.person-detail-table >>> .row.head .cell {
+  text-align: left;
+}
+.person-detail-table >>> .name,
+.person-detail-table >>> .name-text {
+  justify-content: flex-start;
+  text-align: left;
+}
+.person-detail-table >>> .cell .trend-value {
+  justify-content: flex-start;
+}
+.org-full-table >>> .action {
+  width: max-content;
+  min-width: max-content;
 }
 .org-full-detail {
   display: flex;

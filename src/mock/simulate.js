@@ -31,7 +31,16 @@ const VALUE_KEYS = new Set([
   'ytdYoy',
   'monthYoy',
   'monthMom',
-  'extraLabel'
+  'extraLabel',
+  'costMonth',
+  'costDelta',
+  'costRate',
+  'unitMonth',
+  'unitDelta',
+  'unitRate',
+  'headMonth',
+  'headDelta',
+  'headRate'
 ])
 
 export function hashSeed(parts) {
@@ -51,26 +60,27 @@ export function demoSeed(store, extra = {}) {
     store.line,
     store.c1Dept,
     store.timeRange,
-    store.metricScope,
-    store.chartMetric,
     store.queryNonce || 0,
+    extra.chartMetric,
     extra.mapMetric,
     extra.slice,
     extra.c1Slice,
     extra.budgetPeriod,
     extra.budgetType,
     extra.period,
+    extra.scope,
+    extra.subject,
     // 场景下探仅驱动下方列表，不参与全局种子
     extra.scene
   ])
 }
 
-export function scaleOf(store) {
+export function scaleOf(store, extra = {}) {
   const org = ORG_SCALE[store.orgLevel] || 1
   const province = PROVINCE_SCALE[store.province] || 1
   const line = store.line ? 0.94 + ((String(store.line).length % 5) * 0.02) : 1
   const c1Dept = store.c1Dept ? 0.9 + ((String(store.c1Dept).length % 4) * 0.025) : 1
-  const scope = store.metricScope === 'month' ? 0.82 : 1
+  const scope = extra.metricScope === 'month' ? 0.82 : 1
   return org * province * line * c1Dept * scope
 }
 
@@ -168,5 +178,5 @@ export function shiftTree(node, seed, scale = 1, indexRef = { i: 0 }) {
 }
 
 export function withSeed(data, store, extra) {
-  return shiftTree(data, demoSeed(store, extra), scaleOf(store))
+  return shiftTree(data, demoSeed(store, extra), scaleOf(store, extra || {}))
 }

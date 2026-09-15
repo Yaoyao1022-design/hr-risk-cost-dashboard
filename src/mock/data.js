@@ -208,9 +208,9 @@ export const laborMatrix = [
         ]
       },
       {
-        name: '人数',
+        name: '人均收入',
         value: '12,300',
-        unit: '人',
+        unit: '元',
         indicators: [
           { name: '同比', value: '6.33%', trend: 'up' },
           { name: '环比', value: '6.33%', trend: 'down' }
@@ -240,7 +240,7 @@ export const laborMatrix = [
         ]
       },
       {
-        name: '人均收入',
+        name: '人效',
         value: '54,600',
         unit: '元',
         indicators: [
@@ -438,6 +438,78 @@ export const laborMetricDetailRows = [
   }
 ]
 
+const emptyHeadcount = { headMonth: '--', headDelta: '--', headRate: '--' }
+
+function laborCostItem(name, costMonth, costDelta, costRate, unitMonth, unitDelta, unitRate, head, children) {
+  return {
+    name,
+    costMonth,
+    costDelta,
+    costRate,
+    unitMonth,
+    unitDelta,
+    unitRate,
+    ...(head || emptyHeadcount),
+    children
+  }
+}
+
+export const laborCostBreakdownRows = [
+  laborCostItem(
+    '综合人工成本',
+    '592395.1万',
+    '24977.8万',
+    '4.4%',
+    '12439.0',
+    '138.5',
+    '1.1%',
+    { headMonth: '47.67', headDelta: '1.57', headRate: '3.2%' }
+  ),
+  laborCostItem(
+    '固定人工成本',
+    '259982.3万',
+    '70.0万',
+    '0.0%',
+    '5459.3',
+    '-175.3',
+    '-3.1%',
+    { headMonth: '45.17', headDelta: '0.67', headRate: '1.4%' },
+    [
+      laborCostItem('正式工-员工基本工资', '136877.5万', '6033.7万', '4.6%', '2874.3', '37.7', '1.3%'),
+      laborCostItem('正式工-社保公积金', '90987.8万', '2767.9万', '3.1%', '1910.6', '-1.9', '-0.1%'),
+      laborCostItem('正式工-奖金激励', '20070.9万', '-5988.7万', '-23.0%', '421.5', '-143.5', '-25.4%'),
+      laborCostItem('正式工-员工福利', '12045.8万', '2080.7万', '20.9%', '252.9', '36.9', '17.1%')
+    ]
+  ),
+  laborCostItem(
+    '变动人工成本',
+    '332412.8万',
+    '24907.6万',
+    '8.1%',
+    '6980.3',
+    '313.9',
+    '4.7%',
+    { headMonth: '45.17', headDelta: '0.67', headRate: '1.4%' },
+    [
+      laborCostItem('正式工-员工绩效工资', '294419.9万', '15970.0万', '5.7%', '6183.8', '145.9', '2.4%'),
+      laborCostItem('招聘教育及补偿', '-13386.6万', '-3403.9万', '-34.1%', '-281.1', '-64.7', '29.9%'),
+      laborCostItem('正式工-奖金激励', '1914.5万', '838.0万', '77.9%', '40.2', '16.9', '72.3%'),
+      laborCostItem('劳务外包', '2136.6万', '-1515.4万', '-41.5%', '44.9', '-34.3', '-43.3%')
+    ]
+  )
+]
+
+export const laborCostSubjectOptions = [
+  '正式工-员工基本工资',
+  '综合人工成本',
+  '固定人工成本',
+  '变动人工成本',
+  '正式工-社保公积金',
+  '正式工-员工绩效工资',
+  '招聘教育及补偿',
+  '劳务外包'
+]
+
 export const laborDetailSummaries = {
   hq: '当月费率环比：改善最多的是[运营]到仓交仓（-40.3%），恶化最多的是[运营]大件分拣装卸（+22.5%）。',
   province: 'YTD费率同比：改善最多的是[运营]接货仓-30.6%，恶化最多的是省区职能+608.7%；当月费率同比：改善最多的是[运营]大件分拣装卸-98.3%，恶化最多的是[运营]B2C仓+78.3%。',
@@ -545,7 +617,9 @@ const SCENE_RANK_TITLES = [
   // 首条超长标题：超出容器宽度省略，hover 展示全文
   '临时工工时异常巡检核验高风险场景专项排查',
   '人脸识别异常',
-  '同一台设备多 ERP 打卡'
+  '同一台设备多 ERP 打卡',
+  '跨班次重复打卡异常',
+  '无排班出勤异常巡检'
 ]
 
 const SCENE_RANK_POSTS = {
@@ -557,15 +631,34 @@ const SCENE_RANK_POSTS = {
   bonus: ['分拣', '销售支持', '司机', '仓内']
 }
 
+/** 人脸识别异常：二级 6 项，一行展示 4 个 */
+const SCENE_FACE_POSTS = {
+  onjob: ['大件干线专职司机', '服务（安装工程师）', '仓内操作', '配送员', '分拣员', '装卸工'],
+  efficiency: ['分拣', '装卸', '调度', '质控', '仓内操作', '配送员'],
+  input: ['外包', '临时工', '编制外', '加班投入', '劳务派遣', '兼职投入'],
+  leave: ['骨干司机', '班组长', '客服', '质控', '仓内操作', '配送员'],
+  bonus: ['分拣', '销售支持', '司机', '仓内', '装卸', '调度']
+}
+
 export function buildSceneRankItems(scene) {
   const posts = SCENE_RANK_POSTS[scene] || SCENE_RANK_POSTS.onjob
-  return SCENE_RANK_TITLES.map((title, index) => ({
-    rank: index + 1,
-    title,
-    metrics: sceneRankMetrics,
-    // 人脸识别 / 同设备打卡：演示「仅一组数据」横排样式
-    children: sceneChildren(index === 0 ? posts : posts.slice(0, 1))
-  }))
+  const facePosts = SCENE_FACE_POSTS[scene] || SCENE_FACE_POSTS.onjob
+  return SCENE_RANK_TITLES.map((title, index) => {
+    const item = {
+      rank: index + 1,
+      title,
+      metrics: sceneRankMetrics
+    }
+    // 最后一条仅一级数据，不支持展开
+    if (index === SCENE_RANK_TITLES.length - 1) return item
+    if (title === '人脸识别异常') {
+      item.children = sceneChildren(facePosts)
+      return item
+    }
+    // 首条多子项；其余演示「仅一组数据」横排样式
+    item.children = sceneChildren(index === 0 ? posts : posts.slice(0, 1))
+    return item
+  })
 }
 
 export const sceneTables = {
@@ -732,6 +825,186 @@ export const orgRankItems = [
       { index: 3, title: '城配运营组', label: '效率异常', metrics: orgChildMetrics },
       { index: 4, title: '转运运营组', label: '投入异常', metrics: orgChildMetrics },
       { index: 5, title: '仓储运营组', label: '在岗异常', metrics: orgChildMetrics }
+    ]
+  },
+  {
+    rank: 6,
+    title: '四川',
+    value: '10',
+    unit: '条',
+    splits: [
+      { title: '工时申报异常', label: '在岗异常', impact: '126', value: '4,520', unit: '条' },
+      { title: '补贴核验异常', label: '效率异常', impact: '88', value: '3,040', unit: '条' },
+      { title: '加班投入异常', label: '投入异常', impact: '52', value: '1,760', unit: '条' }
+    ],
+    children: [
+      { index: 1, title: '西南运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 2, title: '城配运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 3, title: '仓储运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 4, title: '末端运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 5, title: '转运运营组', label: '效率异常', metrics: orgChildMetrics }
+    ]
+  },
+  {
+    rank: 7,
+    title: '湖北',
+    value: '9',
+    unit: '条',
+    splits: [
+      { title: '计件波动异常', label: '效率异常', impact: '118', value: '4,180', unit: '条' },
+      { title: '临时工工时异常', label: '在岗异常', impact: '79', value: '2,860', unit: '条' },
+      { title: '单价审批异常', label: '投入异常', impact: '49', value: '1,640', unit: '条' }
+    ],
+    children: [
+      { index: 1, title: '华中运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 2, title: '转运运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 3, title: '城配运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 4, title: '末端运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 5, title: '仓储运营组', label: '在岗异常', metrics: orgChildMetrics }
+    ]
+  },
+  {
+    rank: 8,
+    title: '福建',
+    value: '8',
+    unit: '条',
+    splits: [
+      { title: '加班投入异常', label: '投入异常', impact: '102', value: '3,760', unit: '条' },
+      { title: '工时申报异常', label: '在岗异常', impact: '71', value: '2,540', unit: '条' },
+      { title: '补贴核验异常', label: '效率异常', impact: '43', value: '1,420', unit: '条' }
+    ],
+    children: [
+      { index: 1, title: '闽南运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 2, title: '末端运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 3, title: '城配运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 4, title: '转运运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 5, title: '仓储运营组', label: '在岗异常', metrics: orgChildMetrics }
+    ]
+  },
+  {
+    rank: 9,
+    title: '山东',
+    value: '8',
+    unit: '条',
+    splits: [
+      { title: '临时工工时异常', label: '在岗异常', impact: '96', value: '3,420', unit: '条' },
+      { title: '计件波动异常', label: '效率异常', impact: '64', value: '2,280', unit: '条' },
+      { title: '单价审批异常', label: '投入异常', impact: '41', value: '1,310', unit: '条' }
+    ],
+    children: [
+      { index: 1, title: '鲁东运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 2, title: '城配运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 3, title: '末端运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 4, title: '转运运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 5, title: '仓储运营组', label: '效率异常', metrics: orgChildMetrics }
+    ]
+  },
+  {
+    rank: 10,
+    title: '河南',
+    value: '7',
+    unit: '条',
+    splits: [
+      { title: '补贴核验异常', label: '效率异常', impact: '89', value: '3,150', unit: '条' },
+      { title: '加班投入异常', label: '投入异常', impact: '58', value: '2,060', unit: '条' },
+      { title: '工时申报异常', label: '在岗异常', impact: '36', value: '1,180', unit: '条' }
+    ],
+    children: [
+      { index: 1, title: '中原运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 2, title: '转运运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 3, title: '城配运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 4, title: '末端运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 5, title: '仓储运营组', label: '投入异常', metrics: orgChildMetrics }
+    ]
+  },
+  {
+    rank: 11,
+    title: '湖南',
+    value: '6',
+    unit: '条',
+    splits: [
+      { title: '单价审批异常', label: '投入异常', impact: '77', value: '2,840', unit: '条' },
+      { title: '临时工工时异常', label: '在岗异常', impact: '51', value: '1,860', unit: '条' },
+      { title: '计件波动异常', label: '效率异常', impact: '33', value: '1,050', unit: '条' }
+    ],
+    children: [
+      { index: 1, title: '湘南运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 2, title: '末端运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 3, title: '城配运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 4, title: '转运运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 5, title: '仓储运营组', label: '在岗异常', metrics: orgChildMetrics }
+    ]
+  },
+  {
+    rank: 12,
+    title: '安徽',
+    value: '6',
+    unit: '条',
+    splits: [
+      { title: '工时申报异常', label: '在岗异常', impact: '71', value: '2,560', unit: '条' },
+      { title: '补贴核验异常', label: '效率异常', impact: '46', value: '1,680', unit: '条' },
+      { title: '加班投入异常', label: '投入异常', impact: '29', value: '960', unit: '条' }
+    ],
+    children: [
+      { index: 1, title: '皖北运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 2, title: '城配运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 3, title: '末端运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 4, title: '转运运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 5, title: '仓储运营组', label: '效率异常', metrics: orgChildMetrics }
+    ]
+  },
+  {
+    rank: 13,
+    title: '天津',
+    value: '5',
+    unit: '条',
+    splits: [
+      { title: '计件波动异常', label: '效率异常', impact: '64', value: '2,280', unit: '条' },
+      { title: '单价审批异常', label: '投入异常', impact: '42', value: '1,490', unit: '条' },
+      { title: '临时工工时异常', label: '在岗异常', impact: '26', value: '870', unit: '条' }
+    ],
+    children: [
+      { index: 1, title: '津门运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 2, title: '城配运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 3, title: '末端运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 4, title: '转运运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 5, title: '仓储运营组', label: '投入异常', metrics: orgChildMetrics }
+    ]
+  },
+  {
+    rank: 14,
+    title: '河北',
+    value: '5',
+    unit: '条',
+    splits: [
+      { title: '加班投入异常', label: '投入异常', impact: '58', value: '2,060', unit: '条' },
+      { title: '工时申报异常', label: '在岗异常', impact: '39', value: '1,360', unit: '条' },
+      { title: '补贴核验异常', label: '效率异常', impact: '24', value: '790', unit: '条' }
+    ],
+    children: [
+      { index: 1, title: '冀中运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 2, title: '末端运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 3, title: '城配运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 4, title: '转运运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 5, title: '仓储运营组', label: '在岗异常', metrics: orgChildMetrics }
+    ]
+  },
+  {
+    rank: 15,
+    title: '重庆',
+    value: '4',
+    unit: '条',
+    splits: [
+      { title: '临时工工时异常', label: '在岗异常', impact: '51', value: '1,820', unit: '条' },
+      { title: '计件波动异常', label: '效率异常', impact: '34', value: '1,180', unit: '条' },
+      { title: '单价审批异常', label: '投入异常', impact: '21', value: '680', unit: '条' }
+    ],
+    children: [
+      { index: 1, title: '渝中运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 2, title: '城配运营组', label: '效率异常', metrics: orgChildMetrics },
+      { index: 3, title: '末端运营组', label: '投入异常', metrics: orgChildMetrics },
+      { index: 4, title: '转运运营组', label: '在岗异常', metrics: orgChildMetrics },
+      { index: 5, title: '仓储运营组', label: '效率异常', metrics: orgChildMetrics }
     ]
   }
 ]

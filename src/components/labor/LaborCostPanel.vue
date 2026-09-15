@@ -8,12 +8,15 @@
     <div class="split">
       <div class="matrix-side">
         <div class="ctrl-row">
-          <board-radio-group
+          <capsule-tabs
             :options="scopeOptions"
-            :value="store.metricScope"
-            @input="store.metricScope = $event"
+            :value="matrixScope"
+            @input="matrixScope = $event"
           />
-          <board-action kind="more" text="查看指标详情" @click="actions.openMetricDetail()" />
+          <div class="ctrl-links">
+            <board-action kind="more" text="查看综合人工成本" @click="actions.openLaborCost()" />
+            <board-action kind="more" text="查看指标详情" @click="actions.openMetricDetail()" />
+          </div>
         </div>
         <div class="matrix">
           <div
@@ -33,7 +36,7 @@
                 :value="item.value"
                 :unit="item.unit"
                 :trends="item.indicators"
-                :divider="i !== col.items.length - 1"
+                :divider="cIndex < 2 && i === 0"
                 divider-direction="vertical"
               />
             </div>
@@ -45,13 +48,13 @@
         <div class="ctrl-row chart-ctrl">
           <capsule-tabs
             :options="periodOptions"
-            :value="store.period"
-            @input="store.period = $event"
+            :value="chartPeriod"
+            @input="chartPeriod = $event"
           />
           <board-radio-group
             :options="chartOptions"
-            :value="store.chartMetric"
-            @input="store.chartMetric = $event"
+            :value="chartMetric"
+            @input="chartMetric = $event"
           />
         </div>
         <div class="chart-box">
@@ -83,6 +86,9 @@ export default {
     return {
       store,
       actions,
+      matrixScope: 'ytd',
+      chartPeriod: 'month',
+      chartMetric: 'rate',
       periodOptions: [
         { label: '年', value: 'year' },
         { label: '月', value: 'month' }
@@ -100,17 +106,23 @@ export default {
   },
   computed: {
     liveMatrix() {
-      const matrix = withSeed(laborMatrix, this.store)
+      const matrix = withSeed(laborMatrix, this.store, { metricScope: this.matrixScope })
       const labels = periodLabels(this.store)
       const head = matrix[0] && matrix[0].items && matrix[0].items[0]
-      if (head) head.name = this.store.metricScope === 'month' ? labels.month : labels.ytd
+      if (head) head.name = this.matrixScope === 'month' ? labels.month : labels.ytd
       return matrix
     },
     chartSeed() {
-      return demoSeed(this.store, { period: this.store.period })
+      return demoSeed(this.store, {
+        period: this.chartPeriod,
+        chartMetric: this.chartMetric
+      })
     },
     chartLabels() {
-      return dateLabels(this.store)
+      return dateLabels({
+        period: this.chartPeriod,
+        timeRange: this.store.timeRange
+      })
     },
   }
 }
@@ -173,6 +185,12 @@ export default {
   align-items: center;
   flex-shrink: 0;
 }
+.ctrl-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
 .ctrl-row.chart-ctrl {
   gap: 12px;
 }
@@ -210,13 +228,23 @@ export default {
   flex: 1 1 auto;
 }
 .cell >>> .metric-block {
+  --board-metric-divider: #e4e5e9;
   flex: 1 1 auto;
   height: 100%;
   padding: 0;
 }
-.cell.is-head >>> .board-title.lv-2 .text {
+.cell.is-head >>> .board-title.lv-2 .text,
+.col:nth-child(n + 3) .cell:not(.is-head) >>> .board-title.lv-3 .text {
   font-weight: 500;
   color: var(--grey-01);
+}
+.col:nth-child(-n + 2) .cell:not(.is-head) >>> .board-title.lv-3 .text {
+  font-family: 'PingFang SC', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--grey-02);
 }
 .chart-box {
   flex: 1 1 auto;

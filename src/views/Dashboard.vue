@@ -7,6 +7,7 @@
     <switch-card-panel
       v-if="isCockpit"
       plain
+      :class="{ 'is-guide-spotlight': store.guideActive }"
       :items="themeItems"
       :selected-index="selectedIndex"
       :auto-menu-download="false"
@@ -14,7 +15,7 @@
       @action-view="onAiReportView"
       @action-download="onAiReportDownload"
     >
-      <labor-cost-panel v-if="store.theme === 'labor'" />
+      <labor-cost-panel v-if="store.guideActive || store.theme === 'labor'" />
       <leakage-panel v-else />
     </switch-card-panel>
     <div v-else class="standalone-screen">
@@ -71,6 +72,9 @@ export default {
       return this.mode === 'cockpit'
     },
     selectedIndex() {
+      if (this.store.guideActive) {
+        return this.store.guideCardIndex
+      }
       return this.store.theme === 'leak' ? 1 : 0
     },
     themeItems() {
@@ -108,6 +112,11 @@ export default {
   },
   methods: {
     onDashboardScroll() {
+      if (this.store.guideActive) {
+        this.$el.scrollTop = 0
+        this.filterStuck = false
+        return
+      }
       this.filterStuck = this.$el.scrollTop > 0
     },
     syncThemeByMode() {
@@ -115,6 +124,7 @@ export default {
       if (this.mode === 'leak-screen') actions.setTheme('leak')
     },
     onSelectTheme(index) {
+      if (this.store.guideActive) return
       actions.setTheme(index === 1 ? 'leak' : 'labor')
     },
     resolveReportPayload(item, index) {
@@ -172,5 +182,15 @@ export default {
   background: #fff;
   border-radius: 8px;
   padding: 12px;
+}
+::v-deep .switch-card-panel.is-guide-spotlight .switch-card.is-large.active {
+  background: #ffffff;
+  box-shadow: none;
+}
+::v-deep .switch-card-panel.is-guide-spotlight .switch-card.is-large.active .ai-summary {
+  background: #ffffff;
+}
+::v-deep .switch-card-panel.is-guide-spotlight .switch-card.is-large.active .metric-board {
+  background: #f8faff;
 }
 </style>
