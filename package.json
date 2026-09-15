@@ -1,0 +1,22 @@
+{
+  "name": "hr-risk-cost-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:pages": "GITHUB_PAGES_BASE=/hr-risk-cost-dashboard/ vite build --outDir docs && touch docs/.nojekyll",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@lui/lui-pro": "^0.1.0-beta.1",
+    "@lui/lui-ui": "^3.2.2",
+    "echarts": "^5.5.1",
+    "jdl-board-kit": "file:../看板组件库",
+    "vue": "^2.7.16"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue2": "^2.3.3",
+    "vite": "^5.4.11"
+  }
+}
