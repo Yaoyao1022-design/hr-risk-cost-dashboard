@@ -15,7 +15,9 @@
     >
       <div class="app-content-host">
         <main class="app-main">
-          <dashboard :mode="currentScreen" />
+          <task-center v-if="currentScreen === 'task-center'" />
+          <dashboard v-else-if="currentScreen !== 'blank'" :mode="currentScreen" />
+          <div v-else class="demo-blank" aria-hidden="true" />
         </main>
         <app-detail-drawers />
       </div>
@@ -33,9 +35,10 @@
 </template>
 
 <script>
-import { navMenuData } from '@/config/nav-menu'
+import { navMenuData, findMenuByKey } from '@/config/nav-menu'
 import { actions } from '@/store'
 import Dashboard from '@/views/Dashboard.vue'
+import TaskCenter from '@/views/TaskCenter.vue'
 import AppDetailDrawers from '@/components/detail/AppDetailDrawers.vue'
 import NoviceGuide from '@/components/guide/NoviceGuide.vue'
 import logo from '@/assets/images/logo.png'
@@ -43,24 +46,41 @@ import userAvatar from '@/assets/icons/icon-user.svg'
 
 const LAYOUT_THEME_KEY = 'jdwl-layout-theme'
 
+/** 演示用一级：点后切换左侧模块，内容区留空 */
+const DEMO_TOP_KEYS = ['labor-mgmt', 'attend', 'pay', 'org-culture']
+
 const SCREEN_MAP = {
   cockpit: { key: 'cockpit', label: '人力经营驾驶舱' },
   'labor-roi': { key: 'labor-roi', label: '人力成本ROI大屏' },
-  'leak-screen': { key: 'leak-screen', label: '跑冒滴漏大屏' }
+  'leak-screen': { key: 'leak-screen', label: '跑冒滴漏大屏' },
+  'task-center': { key: 'task-mgmt', label: '成本诊断任务管理' }
 }
 
 function screenFromLocation() {
   const hash = (typeof location !== 'undefined' && location.hash) || ''
   const path = hash.replace(/^#/, '') || '/cockpit'
-  if (path.indexOf('labor-roi') !== -1) return 'labor-roi'
-  if (path.indexOf('leak-screen') !== -1) return 'leak-screen'
-  return 'cockpit'
+  if (path.indexOf('labor-roi') !== -1) return { screen: 'labor-roi', menuKey: null }
+  if (path.indexOf('leak-screen') !== -1) return { screen: 'leak-screen', menuKey: null }
+  if (path.indexOf('task-center') !== -1) return { screen: 'task-center', menuKey: null }
+  for (let i = 0; i < DEMO_TOP_KEYS.length; i++) {
+    const key = DEMO_TOP_KEYS[i]
+    if (path.indexOf(key) !== -1) {
+      const menu = findMenuByKey(navMenuData, key)
+      const firstModule = menu && menu.children && menu.children[0]
+      return {
+        screen: 'blank',
+        menuKey: (firstModule && firstModule.key) || key
+      }
+    }
+  }
+  return { screen: 'cockpit', menuKey: null }
 }
 
 export default {
   name: 'App',
-  components: { Dashboard, AppDetailDrawers, NoviceGuide },
+  components: { Dashboard, TaskCenter, AppDetailDrawers, NoviceGuide },
   data() {
+    const loc = screenFromLocation()
     return {
       navMenuData,
       logo,
@@ -73,12 +93,15 @@ export default {
         { key: 'center', label: '个人中心' },
         { key: 'logout', label: '退出登录' }
       ],
-      currentScreen: screenFromLocation()
+      currentScreen: loc.screen,
+      menuKeyOverride: loc.menuKey
     }
   },
   computed: {
     activeMenuKey() {
-      return SCREEN_MAP[this.currentScreen].key
+      if (this.menuKeyOverride) return this.menuKeyOverride
+      const screen = SCREEN_MAP[this.currentScreen]
+      return (screen && screen.key) || 'cockpit'
     }
   },
   mounted() {
@@ -89,12 +112,23 @@ export default {
   },
   methods: {
     syncScreenFromHash() {
-      this.currentScreen = screenFromLocation()
+      const loc = screenFromLocation()
+      this.currentScreen = loc.screen
+      this.menuKeyOverride = loc.menuKey
     },
     goScreen(screen) {
       const next = SCREEN_MAP[screen] ? screen : 'cockpit'
+      this.menuKeyOverride = null
       this.currentScreen = next
       if (typeof location !== 'undefined') location.hash = '/' + next
+    },
+    /** 顶栏演示分类：切换左侧二级菜单，内容区为空 */
+    goDemoSection(topKey) {
+      const menu = findMenuByKey(navMenuData, topKey)
+      const firstModule = menu && menu.children && menu.children[0]
+      this.menuKeyOverride = (firstModule && firstModule.key) || topKey
+      this.currentScreen = 'blank'
+      if (typeof location !== 'undefined') location.hash = '/' + topKey
     },
     getGuideTargets() {
       const cards = document.querySelectorAll('.dashboard .switch-card.is-large')
@@ -127,10 +161,25 @@ export default {
     onAction(type, payload) {
       if (type === 'menu-select' && payload && payload.item) {
         const item = payload.item
-        if (item.children && item.children.length) return
-        if (item.screen || item.key === 'cockpit') {
-          this.goScreen(item.screen || 'cockpit')
+        if (item.key === 'cost') {
+          this.goScreen('cockpit')
+          return
         }
+        if (item.key === 'task') {
+          this.goScreen('task-center')
+          return
+        }
+        if (DEMO_TOP_KEYS.indexOf(item.key) !== -1) {
+          this.goDemoSection(item.key)
+          return
+        }
+        if (item.screen) {
+          this.goScreen(item.screen)
+          return
+        }
+        // 演示模块：切换高亮，内容区留空（有子级仍由布局展开）
+        this.menuKeyOverride = item.key
+        this.currentScreen = 'blank'
         return
       }
 
@@ -182,6 +231,11 @@ export default {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+.demo-blank {
+  flex: 1;
+  min-height: 0;
+  background: transparent;
 }
 .use-page-layout .lui-app-header__logo {
   width: 151px;

@@ -2,7 +2,7 @@
   <div class="leak-panel">
     <div class="task-link-row">
       <board-title class="section-title" text="跑冒滴漏巡检概览" :level="1" />
-      <board-action kind="more" text="查看跑冒滴漏任务" />
+      <board-action kind="more" text="查看跑冒滴漏任务" @click="goTaskCenter" />
     </div>
 
     <div class="top-split">
@@ -222,6 +222,9 @@ export default {
     }
   },
   methods: {
+    goTaskCenter() {
+      if (typeof location !== 'undefined') location.hash = '/task-center'
+    },
     resetOrgPaging() {
       this.orgVisibleCount = this.orgPageSize
       this.expandedOrg = [0]

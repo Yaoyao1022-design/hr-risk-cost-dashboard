@@ -1,0 +1,5 @@
+export * from '../../node_modules/@lui/icons/es/index.js'
+export { default as Ai } from '@/components/icons/Ai.vue'
+export { default as AiSolid } from '@/components/icons/AiSolid.vue'
+export { default as LightbulbAward } from '@/components/icons/LightbulbAward.vue'
+export { default as LightbulbAwardSolid } from '@/components/icons/LightbulbAwardSolid.vue'

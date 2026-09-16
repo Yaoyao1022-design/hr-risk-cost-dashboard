@@ -2,7 +2,7 @@
   <div class="labor-panel">
     <div class="toolbar">
       <board-title class="toolbar-title" text="人力成本经营概览" :level="1" />
-      <board-action kind="more" text="查看成本改善任务" />
+      <board-action kind="more" text="查看成本改善任务" @click="goTaskCenter" />
     </div>
 
     <div class="split">
@@ -124,6 +124,11 @@ export default {
         timeRange: this.store.timeRange
       })
     },
+  },
+  methods: {
+    goTaskCenter() {
+      if (typeof location !== 'undefined') location.hash = '/task-center'
+    }
   }
 }
 </script>
@@ -237,6 +242,12 @@ export default {
 .col:nth-child(n + 3) .cell:not(.is-head) >>> .board-title.lv-3 .text {
   font-weight: 500;
   color: var(--grey-01);
+}
+.col:nth-child(-n + 2) .cell.is-head >>> .metric-value.lv-2 .num {
+  font-size: 22px;
+}
+.col:nth-child(n + 3) .cell.is-head >>> .metric-value.lv-2 .num {
+  font-size: 18px;
 }
 .col:nth-child(-n + 2) .cell:not(.is-head) >>> .board-title.lv-3 .text {
   font-family: 'PingFang SC', sans-serif;

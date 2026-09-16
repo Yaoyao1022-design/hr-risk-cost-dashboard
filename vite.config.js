@@ -14,7 +14,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      'jdl-board-kit': path.resolve(__dirname, '../看板组件库')
+      'jdl-board-kit': path.resolve(__dirname, '../看板组件库'),
+      // 扩展侧栏缺失的 Icon 3.0（Ai / LightbulbAward），保持线性默认 + Solid 选中
+      '@lui/icons': path.resolve(__dirname, 'src/shims/lui-icons.js')
     }
   },
   optimizeDeps: {

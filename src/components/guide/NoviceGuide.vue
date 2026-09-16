@@ -1,6 +1,8 @@
 <template>
-  <div v-show="visible" class="novice-guide" aria-live="polite">
-    <div class="novice-guide__blocker" />
+  <div v-if="visible" class="novice-guide" aria-live="polite">
+    <!-- 遮罩捕获层：层级必须低于 tip，避免挡住「知道了」 -->
+    <div class="novice-guide__blocker" @click.stop.prevent />
+
     <div
       v-for="(rect, idx) in spotlightRects"
       :key="idx"
@@ -10,8 +12,15 @@
     />
 
     <div class="novice-guide__tip" :style="tipStyle">
-      <p class="novice-guide__text">可以点击卡片进行同看板切换哦~</p>
-      <button type="button" class="novice-guide__btn" @click="dismiss">知道了</button>
+      <p class="novice-guide__text">可以点击卡片进行不同看板切换</p>
+      <button
+        type="button"
+        class="novice-guide__btn"
+        @mousedown.stop.prevent="dismiss"
+        @click.stop.prevent="dismiss"
+      >
+        知道了
+      </button>
     </div>
 
     <div
@@ -27,13 +36,19 @@
 
 <script>
 import handIcon from '@/assets/images/手势.png'
+import { DEMO_ALWAYS_SHOW_GUIDE } from '@/config/demo'
 
 const STORAGE_KEY = 'hr-cost-diag-novice-guide-v1'
 const HOLE_PAD = 6
-/** 每轮演示顺序：先点右侧卡片，再点左侧（初始固定左亮右暗） */
 const GUIDE_CLICK_ORDER = [1, 0]
 const GUIDE_INITIAL_HOLD_MS = 420
 const GUIDE_MAX_CLICKS = 6
+
+/**
+ * 演示阶段：同一次页面生命周期内关闭引导后不再弹出。
+ * 整页刷新 / 重新打开会重置模块变量，引导会再出现。
+ */
+let dismissedInPageLife = false
 
 export default {
   name: 'NoviceGuide',
@@ -61,7 +76,8 @@ export default {
       clickCount: 0,
       timers: [],
       rafId: 0,
-      running: false
+      running: false,
+      closed: false
     }
   },
   computed: {
@@ -84,7 +100,7 @@ export default {
         left: `${this.tipPos.left}px`,
         top: `${this.tipPos.top}px`
       }
-    },
+    }
   },
   watch: {
     active: {
@@ -118,11 +134,17 @@ export default {
         return false
       }
     },
+    shouldSkipGuide() {
+      if (this.closed || dismissedInPageLife) return true
+      if (DEMO_ALWAYS_SHOW_GUIDE) return false
+      return this.isDismissed()
+    },
     tryStart() {
-      if (!this.active || this.running || this.visible) return
-      if (!this.shouldForceShow() && this.isDismissed()) return
+      if (!this.active || this.running || this.visible || this.closed) return
+      if (!this.shouldForceShow() && this.shouldSkipGuide()) return
       this.$nextTick(() => {
-        if (this.running || this.visible) return
+        if (!this.active || this.running || this.visible || this.closed) return
+        if (!this.shouldForceShow() && this.shouldSkipGuide()) return
         const targets = this.getTargets() || []
         if (!targets.length) {
           this.delay(this.tryStart, 120)
@@ -169,13 +191,13 @@ export default {
       }
     },
     async startLoop() {
-      if (this.running) return
+      if (this.running || this.closed) return
       this.running = true
       await this.wait(GUIDE_INITIAL_HOLD_MS)
-      if (this.running) this.runCycle()
+      if (this.running && !this.closed) this.runCycle()
     },
     async runCycle() {
-      if (!this.running) return
+      if (!this.running || this.closed) return
       const targets = this.getTargets() || []
       if (targets.length < 2) {
         this.delay(() => this.runCycle(), 200)
@@ -184,24 +206,24 @@ export default {
       this.updateTip(targets)
 
       for (let step = 0; step < GUIDE_CLICK_ORDER.length; step += 1) {
-        if (!this.running) return
+        if (!this.running || this.closed) return
         const index = GUIDE_CLICK_ORDER[step]
         const fresh = this.getTargets() || []
         const rect = fresh[index]
         if (!rect) continue
         await this.moveHandTo(rect)
-        if (!this.running) return
+        if (!this.running || this.closed) return
         await this.performClick(index)
-        if (!this.running) return
+        if (!this.running || this.closed) return
         this.clickCount += 1
         if (this.clickCount >= GUIDE_MAX_CLICKS) {
           await this.wait(500)
-          this.dismiss()
+          if (!this.closed) this.dismiss()
           return
         }
         await this.wait(1100)
       }
-      if (this.running) this.runCycle()
+      if (this.running && !this.closed) this.runCycle()
     },
     moveHandTo(rect) {
       const targetX = rect.left + rect.width * 0.55
@@ -223,11 +245,13 @@ export default {
     async performClick(index) {
       this.clicking = true
       await this.wait(240)
-      if (!this.running) return
+      if (!this.running || this.closed) return
       this.clicking = false
       await this.nextFrames(1)
+      if (!this.running || this.closed) return
       this.$emit('highlight', index)
       await this.nextFrames(2)
+      if (!this.running || this.closed) return
       this.showSpotlight(index)
       await this.wait(16)
     },
@@ -235,16 +259,22 @@ export default {
       return new Promise((resolve) => {
         let left = count
         const tick = () => {
+          if (this.closed) {
+            resolve()
+            return
+          }
           left -= 1
           if (left <= 0) resolve()
-          else requestAnimationFrame(tick)
+          else {
+            this.rafId = requestAnimationFrame(tick)
+          }
         }
-        requestAnimationFrame(tick)
+        this.rafId = requestAnimationFrame(tick)
       })
     },
     wait(ms) {
       return new Promise((resolve) => {
-        if (!ms) {
+        if (!ms || this.closed) {
           resolve()
           return
         }
@@ -254,7 +284,7 @@ export default {
     delay(fn, ms) {
       const id = setTimeout(() => {
         this.timers = this.timers.filter((item) => item !== id)
-        fn()
+        if (!this.closed) fn()
       }, ms)
       this.timers.push(id)
       return id
@@ -262,23 +292,29 @@ export default {
     clearTimers() {
       this.timers.forEach((id) => clearTimeout(id))
       this.timers = []
-      cancelAnimationFrame(this.rafId)
+      if (this.rafId) cancelAnimationFrame(this.rafId)
       this.rafId = 0
     },
     stop(emitHide) {
       this.running = false
       this.clicking = false
       this.clearTimers()
+      const wasVisible = this.visible
       this.visible = false
       this.clickCount = 0
       this.handPos = { x: 0, y: 0, opacity: 0 }
-      if (emitHide) this.$emit('hide')
+      if (emitHide && wasVisible) this.$emit('hide')
     },
     dismiss() {
-      try {
-        localStorage.setItem(STORAGE_KEY, '1')
-      } catch (e) {
-        /* ignore */
+      if (this.closed) return
+      this.closed = true
+      dismissedInPageLife = true
+      if (!DEMO_ALWAYS_SHOW_GUIDE) {
+        try {
+          localStorage.setItem(STORAGE_KEY, '1')
+        } catch (e) {
+          /* ignore */
+        }
       }
       this.stop(true)
       this.$emit('dismiss')
@@ -297,20 +333,32 @@ export default {
 .novice-guide__blocker {
   position: absolute;
   inset: 0;
+  z-index: 1;
   pointer-events: auto;
 }
 .novice-guide__hole {
   position: fixed;
-  z-index: 1201;
+  z-index: 2;
   border-radius: 10px;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.52);
   pointer-events: none;
   transform: translateZ(0);
   backface-visibility: hidden;
 }
+.novice-guide__hand-wrap {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  width: 224px;
+  height: 224px;
+  pointer-events: none;
+  will-change: transform;
+  backface-visibility: hidden;
+}
 .novice-guide__tip {
   position: fixed;
-  z-index: 1202;
+  z-index: 10;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
@@ -326,8 +374,11 @@ export default {
   color: #fff;
   white-space: nowrap;
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  pointer-events: none;
 }
 .novice-guide__btn {
+  position: relative;
+  z-index: 11;
   min-width: 72px;
   height: 32px;
   padding: 5px 16px;
@@ -338,21 +389,11 @@ export default {
   font-size: 14px;
   line-height: 22px;
   cursor: pointer;
+  pointer-events: auto;
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 .novice-guide__btn:hover {
   background: rgba(255, 255, 255, 0.12);
-}
-.novice-guide__hand-wrap {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 1203;
-  width: 224px;
-  height: 224px;
-  pointer-events: none;
-  will-change: transform;
-  backface-visibility: hidden;
 }
 .novice-guide__hand {
   display: block;
