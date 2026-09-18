@@ -15,7 +15,8 @@
     >
       <div class="app-content-host">
         <main class="app-main">
-          <task-center v-if="currentScreen === 'task-center'" />
+          <home-page v-if="currentScreen === 'home'" />
+          <task-center v-else-if="currentScreen === 'task-center'" />
           <dashboard v-else-if="currentScreen !== 'blank'" :mode="currentScreen" />
           <div v-else class="demo-blank" aria-hidden="true" />
         </main>
@@ -39,6 +40,7 @@ import { navMenuData, findMenuByKey } from '@/config/nav-menu'
 import { actions } from '@/store'
 import Dashboard from '@/views/Dashboard.vue'
 import TaskCenter from '@/views/TaskCenter.vue'
+import HomePage from '@/views/Home.vue'
 import AppDetailDrawers from '@/components/detail/AppDetailDrawers.vue'
 import NoviceGuide from '@/components/guide/NoviceGuide.vue'
 import logo from '@/assets/images/logo.png'
@@ -50,6 +52,7 @@ const LAYOUT_THEME_KEY = 'jdwl-layout-theme'
 const DEMO_TOP_KEYS = ['labor-mgmt', 'attend', 'pay', 'org-culture']
 
 const SCREEN_MAP = {
+  home: { key: 'home', label: '首页' },
   cockpit: { key: 'cockpit', label: '人力经营驾驶舱' },
   'labor-roi': { key: 'labor-roi', label: '人力成本ROI大屏' },
   'leak-screen': { key: 'leak-screen', label: '跑冒滴漏大屏' },
@@ -58,10 +61,14 @@ const SCREEN_MAP = {
 
 function screenFromLocation() {
   const hash = (typeof location !== 'undefined' && location.hash) || ''
-  const path = hash.replace(/^#/, '') || '/cockpit'
+  const path = hash.replace(/^#/, '') || '/home'
+  if (path === '/' || path === '/home' || path.indexOf('/home') === 0) {
+    return { screen: 'home', menuKey: null }
+  }
   if (path.indexOf('labor-roi') !== -1) return { screen: 'labor-roi', menuKey: null }
   if (path.indexOf('leak-screen') !== -1) return { screen: 'leak-screen', menuKey: null }
   if (path.indexOf('task-center') !== -1) return { screen: 'task-center', menuKey: null }
+  if (path.indexOf('cockpit') !== -1) return { screen: 'cockpit', menuKey: null }
   for (let i = 0; i < DEMO_TOP_KEYS.length; i++) {
     const key = DEMO_TOP_KEYS[i]
     if (path.indexOf(key) !== -1) {
@@ -73,12 +80,12 @@ function screenFromLocation() {
       }
     }
   }
-  return { screen: 'cockpit', menuKey: null }
+  return { screen: 'home', menuKey: null }
 }
 
 export default {
   name: 'App',
-  components: { Dashboard, TaskCenter, AppDetailDrawers, NoviceGuide },
+  components: { Dashboard, TaskCenter, HomePage, AppDetailDrawers, NoviceGuide },
   data() {
     const loc = screenFromLocation()
     return {
@@ -101,7 +108,7 @@ export default {
     activeMenuKey() {
       if (this.menuKeyOverride) return this.menuKeyOverride
       const screen = SCREEN_MAP[this.currentScreen]
-      return (screen && screen.key) || 'cockpit'
+      return (screen && screen.key) || 'home'
     }
   },
   mounted() {
@@ -117,7 +124,7 @@ export default {
       this.menuKeyOverride = loc.menuKey
     },
     goScreen(screen) {
-      const next = SCREEN_MAP[screen] ? screen : 'cockpit'
+      const next = SCREEN_MAP[screen] ? screen : 'home'
       this.menuKeyOverride = null
       this.currentScreen = next
       if (typeof location !== 'undefined') location.hash = '/' + next
@@ -161,6 +168,10 @@ export default {
     onAction(type, payload) {
       if (type === 'menu-select' && payload && payload.item) {
         const item = payload.item
+        if (item.key === 'home' || item.screen === 'home') {
+          this.goScreen('home')
+          return
+        }
         if (item.key === 'cost') {
           this.goScreen('cockpit')
           return

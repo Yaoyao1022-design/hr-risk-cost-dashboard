@@ -379,6 +379,11 @@ export default {
 .novice-guide__btn {
   position: relative;
   z-index: 11;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
   min-width: 72px;
   height: 32px;
   padding: 5px 16px;
@@ -393,7 +398,16 @@ export default {
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 .novice-guide__btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  width: 85.5px;
+  height: 32px;
+  flex: none;
+  flex-grow: 1;
+  background: rgba(46, 45, 45, 0.2);
 }
 .novice-guide__hand {
   display: block;

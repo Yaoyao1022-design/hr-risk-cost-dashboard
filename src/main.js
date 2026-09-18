@@ -9,6 +9,7 @@ import '@lui/lui-ui/lib/theme-chalk/index.css'
 import '@lui/lui-ui/lib/theme-chalk/display.css'
 import '@lui/lui-pro/lib/theme-chalk/index.css'
 import App from './App.vue'
+import './styles/fonts.css'
 import './styles/global.css'
 
 const Layout = PageLayout && PageLayout.default ? PageLayout.default : PageLayout

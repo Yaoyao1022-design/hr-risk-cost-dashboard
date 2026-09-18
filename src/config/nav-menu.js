@@ -4,6 +4,12 @@ function leaf(key, label) {
 
 export const navMenuData = [
   {
+    key: 'home',
+    label: '首页',
+    path: '/home',
+    screen: 'home'
+  },
+  {
     key: 'labor-mgmt',
     label: '用工管理',
     children: [
