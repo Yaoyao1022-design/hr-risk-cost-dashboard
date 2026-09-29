@@ -421,7 +421,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 12px 12px 0;
+  padding: 12px 0 0;
   box-sizing: border-box;
 }
 .rate-chart-panel .chart-box >>> .chart-board {
