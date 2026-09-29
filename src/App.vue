@@ -54,9 +54,20 @@ const DEMO_TOP_KEYS = ['labor-mgmt', 'attend', 'pay', 'org-culture']
 const SCREEN_MAP = {
   home: { key: 'home', label: '首页' },
   cockpit: { key: 'cockpit', label: '人力经营驾驶舱' },
+  'cockpit-v2': { key: 'cockpit-v2', label: '人力经营驾驶舱' },
   'labor-roi': { key: 'labor-roi', label: '人力成本ROI大屏' },
+  'labor-roi-v2': { key: 'labor-roi-v2', label: '人力成本ROI大屏' },
   'leak-screen': { key: 'leak-screen', label: '跑冒滴漏大屏' },
+  'leak-screen-v2': { key: 'leak-screen-v2', label: '跑冒滴漏大屏' },
   'task-center': { key: 'task-mgmt', label: '成本诊断任务管理' }
+}
+
+function applyLayoutByScreen(screen) {
+  if (screen === 'cockpit-v2' || screen === 'labor-roi-v2' || screen === 'leak-screen-v2') {
+    actions.setLayoutVersion('v2')
+  } else if (screen === 'cockpit' || screen === 'labor-roi' || screen === 'leak-screen') {
+    actions.setLayoutVersion('v1')
+  }
 }
 
 function screenFromLocation() {
@@ -65,6 +76,9 @@ function screenFromLocation() {
   if (path === '/' || path === '/home' || path.indexOf('/home') === 0) {
     return { screen: 'home', menuKey: null }
   }
+  if (path.indexOf('labor-roi-v2') !== -1) return { screen: 'labor-roi-v2', menuKey: null }
+  if (path.indexOf('leak-screen-v2') !== -1) return { screen: 'leak-screen-v2', menuKey: null }
+  if (path.indexOf('cockpit-v2') !== -1) return { screen: 'cockpit-v2', menuKey: null }
   if (path.indexOf('labor-roi') !== -1) return { screen: 'labor-roi', menuKey: null }
   if (path.indexOf('leak-screen') !== -1) return { screen: 'leak-screen', menuKey: null }
   if (path.indexOf('task-center') !== -1) return { screen: 'task-center', menuKey: null }
@@ -88,6 +102,7 @@ export default {
   components: { Dashboard, TaskCenter, HomePage, AppDetailDrawers, NoviceGuide },
   data() {
     const loc = screenFromLocation()
+    applyLayoutByScreen(loc.screen)
     return {
       navMenuData,
       logo,
@@ -122,11 +137,13 @@ export default {
       const loc = screenFromLocation()
       this.currentScreen = loc.screen
       this.menuKeyOverride = loc.menuKey
+      applyLayoutByScreen(loc.screen)
     },
     goScreen(screen) {
       const next = SCREEN_MAP[screen] ? screen : 'home'
       this.menuKeyOverride = null
       this.currentScreen = next
+      applyLayoutByScreen(next)
       if (typeof location !== 'undefined') location.hash = '/' + next
     },
     /** 顶栏演示分类：切换左侧二级菜单，内容区为空 */
@@ -174,6 +191,10 @@ export default {
         }
         if (item.key === 'cost') {
           this.goScreen('cockpit')
+          return
+        }
+        if (item.key === 'cost-new') {
+          this.goScreen('cockpit-v2')
           return
         }
         if (item.key === 'task') {

@@ -1,60 +1,119 @@
 <template>
-  <div class="labor-panel">
-    <div class="toolbar">
-      <board-title class="toolbar-title" text="人力成本经营概览" :level="1" />
-      <board-action kind="more" text="查看成本改善任务" @click="goTaskCenter" />
-    </div>
+  <div class="labor-panel" :class="'is-' + variant">
+    <!-- 原版：经营概览矩阵 + 趋势 -->
+    <template v-if="variant === 'v1'">
+      <div class="toolbar">
+        <board-title class="toolbar-title" text="人力成本经营概览" :level="1" />
+        <board-action kind="more" text="查看成本改善任务" @click="goTaskCenter" />
+      </div>
 
-    <div class="split">
-      <div class="matrix-side">
-        <div class="ctrl-row">
-          <capsule-tabs
-            :options="scopeOptions"
-            :value="matrixScope"
-            @input="matrixScope = $event"
-          />
-          <div class="ctrl-links">
-            <board-action kind="more" text="查看综合人工成本" @click="actions.openLaborCost()" />
-            <board-action kind="more" text="查看指标详情" @click="actions.openMetricDetail()" />
+      <div class="split">
+        <div class="matrix-side">
+          <div class="ctrl-row">
+            <capsule-tabs
+              :options="scopeOptions"
+              :value="matrixScope"
+              @input="matrixScope = $event"
+            />
+            <div class="ctrl-links">
+              <board-action kind="more" text="查看综合人工成本" @click="actions.openLaborCost()" />
+              <board-action kind="more" text="查看指标详情" @click="actions.openMetricDetail()" />
+            </div>
           </div>
-        </div>
-        <div class="matrix">
-          <div
-            v-for="(col, cIndex) in liveMatrix"
-            :key="cIndex"
-            class="col"
-          >
+          <div class="matrix">
             <div
-              v-for="(item, i) in col.items"
-              :key="item.name"
-              class="cell"
-              :class="{ 'is-head': i === 0 }"
+              v-for="(col, cIndex) in liveMatrix"
+              :key="cIndex"
+              class="col"
             >
-              <metric-block
-                :variant="i === 0 ? 'l2-t' : 'l3-t'"
-                :title="item.name"
-                :value="item.value"
-                :unit="item.unit"
-                :trends="item.indicators"
-                :divider="cIndex < 2 && i === 0"
-                divider-direction="vertical"
-              />
+              <div
+                v-for="(item, i) in col.items"
+                :key="item.name"
+                class="cell"
+                :class="{ 'is-head': i === 0 }"
+              >
+                <metric-block
+                  :variant="i === 0 ? 'l2-t' : 'l3-t'"
+                  :title="item.name"
+                  :value="item.value"
+                  :unit="item.unit"
+                  :trends="item.indicators"
+                  :divider="cIndex < 2 && i === 0"
+                  divider-direction="vertical"
+                />
+              </div>
             </div>
           </div>
         </div>
+
+        <div class="chart-side">
+          <div class="ctrl-row chart-ctrl">
+            <capsule-tabs
+              :options="periodOptions"
+              :value="chartPeriod"
+              @input="chartPeriod = $event"
+            />
+            <board-radio-group
+              :options="chartOptions"
+              :value="chartMetric"
+              @input="chartMetric = $event"
+            />
+          </div>
+          <div class="chart-box">
+            <chart-board
+              variant="multi-line"
+              plot-size="lg"
+              fill
+              :seed="chartSeed"
+              :labels="chartLabels"
+            />
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- 新版：费率卡 + 综合费率趋势 + 指标对比 -->
+    <template v-else>
+      <div class="rate-row">
+        <div
+          v-for="card in rateCardList"
+          :key="card.key"
+          class="rate-group"
+        >
+          <metric-block
+            class="rate-group__primary"
+            variant="l1-h"
+            show-icon
+            icon-name="安全"
+            help
+            tone="primary"
+            :title="card.label"
+            :value="card.value"
+            :trends="card.trends"
+            trends-layout="horizontal"
+          />
+          <metric-group
+            class="rate-group__secondary"
+            layout="horizontal"
+            variant="l3-t-h"
+            nowrap
+            :show-divider="false"
+            :items="rateSubItems(card)"
+          />
+        </div>
       </div>
 
-      <div class="chart-side">
+      <div class="rate-chart-panel">
         <div class="ctrl-row chart-ctrl">
-          <capsule-tabs
-            :options="periodOptions"
-            :value="chartPeriod"
-            @input="chartPeriod = $event"
-          />
           <board-radio-group
             :options="chartOptions"
             :value="chartMetric"
             @input="chartMetric = $event"
+          />
+          <capsule-tabs
+            :options="periodOptions"
+            :value="chartPeriod"
+            @input="chartPeriod = $event"
           />
         </div>
         <div class="chart-box">
@@ -67,7 +126,9 @@
           />
         </div>
       </div>
-    </div>
+
+      <indicator-compare-panel />
+    </template>
 
     <labor-detail-panel />
   </div>
@@ -75,13 +136,23 @@
 
 <script>
 import { store, actions } from '@/store'
-import { laborMatrix } from '@/mock/data'
+import { laborMatrix, laborRateCards } from '@/mock/data'
 import { dateLabels, demoSeed, periodLabels, withSeed } from '@/mock/simulate'
 import LaborDetailPanel from '@/components/labor/LaborDetailPanel.vue'
+import IndicatorComparePanel from '@/components/labor/IndicatorComparePanel.vue'
 
 export default {
   name: 'LaborCostPanel',
-  components: { LaborDetailPanel },
+  components: { LaborDetailPanel, IndicatorComparePanel },
+  props: {
+    variant: {
+      type: String,
+      default: 'v1',
+      validator(v) {
+        return v === 'v1' || v === 'v2'
+      }
+    }
+  },
   data() {
     return {
       store,
@@ -112,6 +183,14 @@ export default {
       if (head) head.name = this.matrixScope === 'month' ? labels.month : labels.ytd
       return matrix
     },
+    rateCardList() {
+      const cards = withSeed(laborRateCards, this.store)
+      const labels = periodLabels(this.store)
+      return [
+        { key: 'ytd', ...cards.ytd, label: labels.ytd },
+        { key: 'month', ...cards.month, label: labels.month }
+      ]
+    },
     chartSeed() {
       return demoSeed(this.store, {
         period: this.chartPeriod,
@@ -123,9 +202,23 @@ export default {
         period: this.chartPeriod,
         timeRange: this.store.timeRange
       })
-    },
+    }
   },
   methods: {
+    rateSubItems(card) {
+      return [
+        {
+          title: card.fixed.title,
+          value: card.fixed.value,
+          trends: card.fixed.trends || []
+        },
+        {
+          title: card.variable.title,
+          value: card.variable.value,
+          trends: card.variable.trends || []
+        }
+      ]
+    },
     goTaskCenter() {
       if (typeof location !== 'undefined') location.hash = '/task-center'
     }
@@ -138,6 +231,9 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.labor-panel.is-v2 {
+  gap: 12px;
 }
 .toolbar {
   display: flex;
@@ -262,9 +358,82 @@ export default {
   min-height: 0;
   display: flex;
   background: #fff;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.rate-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  box-sizing: border-box;
+}
+.rate-group {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8faff;
+  box-sizing: border-box;
+}
+.rate-group__primary {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-right: 12px;
+  border-right: 1px solid #e7eeff;
+  box-sizing: border-box;
+}
+.rate-group__secondary {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.rate-group__secondary >>> .metric-group.horizontal {
+  width: 100%;
+  gap: 12px;
+}
+.rate-group__secondary >>> .metric-block {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.rate-chart-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #fff;
+  box-sizing: border-box;
+}
+.rate-chart-panel .ctrl-row {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+.rate-chart-panel .ctrl-row.chart-ctrl >>> .board-radio-group {
+  flex: 0 1 auto;
+  min-width: 0;
+  justify-content: flex-start;
+}
+.rate-chart-panel .chart-box {
+  flex: 0 0 auto;
+  height: 300px;
+  min-height: 300px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 12px 12px 0;
+  box-sizing: border-box;
+}
+.rate-chart-panel .chart-box >>> .chart-board {
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 @media (max-width: 1100px) {
-  .split {
+  .split,
+  .rate-row {
     grid-template-columns: 1fr;
   }
 }

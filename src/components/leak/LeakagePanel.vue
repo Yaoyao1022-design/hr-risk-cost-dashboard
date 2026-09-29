@@ -1,11 +1,11 @@
 <template>
-  <div class="leak-panel">
-    <div class="task-link-row">
+  <div class="leak-panel" :class="'is-' + variant">
+    <div v-if="variant === 'v1'" class="task-link-row">
       <board-title class="section-title" text="跑冒滴漏巡检概览" :level="1" />
       <board-action kind="more" text="查看跑冒滴漏任务" @click="goTaskCenter" />
     </div>
 
-    <div class="top-split">
+    <div v-if="variant === 'v1'" class="top-split">
       <div class="inspect-card">
         <board-title text="本月巡检识别风险及处置情况" :level="1" />
         <div class="inspect-kpis">
@@ -35,6 +35,32 @@
       </div>
     </div>
 
+    <!-- 新版图4：全宽巡检识别，无右侧图表 -->
+    <div v-else class="inspect-card is-v2">
+      <board-title text="本月巡检识别风险及处置情况" :level="1" />
+      <div class="inspect-kpis">
+        <metric-block
+          v-for="item in inspectKpis"
+          :key="item.title"
+          variant="l2"
+          :title="item.title"
+          :value="item.value"
+          :unit="item.unit"
+          :tone="item.tone"
+        />
+      </div>
+      <div class="handle-row">
+        <div class="handle-box">
+          <board-title text="自动拦截" :level="1" bar />
+          <metric-group variant="l3" layout="horizontal" nowrap :items="inspectAuto" />
+        </div>
+        <div class="handle-box">
+          <board-title text="人工处理" :level="1" bar />
+          <metric-group variant="l3" layout="horizontal" nowrap :items="inspectManual" />
+        </div>
+      </div>
+    </div>
+
     <div class="drill">
       <capsule-tabs
         :options="drillTabs"
@@ -43,6 +69,18 @@
       />
 
       <div v-if="store.drillTab === 'org'" class="org-block">
+        <div class="drill-chart-panel">
+          <board-title :text="orgTrendTitle" :level="1" />
+          <div class="chart-box">
+            <chart-board
+              variant="multi-line"
+              plot-size="lg"
+              fill
+              :seed="orgTrendSeed"
+              :labels="chartLabels"
+            />
+          </div>
+        </div>
         <rank-card-list
           variant="multi"
           :items="orgRanks"
@@ -60,29 +98,44 @@
       </div>
 
       <template v-else-if="store.drillTab === 'scene'">
-        <div class="scene-row">
-          <switch-card
-            v-for="card in sceneCardItems"
-            :key="card.id"
-            size="small"
-            :title="card.title"
-            :value="card.count"
-            :selected="store.scene === card.id"
-            :impact="card.impact"
-            @select="actions.setScene(card.id)"
+        <div class="scene-block">
+          <div class="scene-row">
+            <switch-card
+              v-for="card in sceneCardItems"
+              :key="card.id"
+              size="small"
+              :title="card.title"
+              :value="card.count"
+              :selected="store.scene === card.id"
+              :impact="card.impact"
+              @select="actions.setScene(card.id)"
+            />
+          </div>
+          <div class="drill-chart-panel">
+            <board-title :text="sceneTrendTitle" :level="1" />
+            <div class="chart-box">
+              <chart-board
+                :key="'scene-trend-' + store.scene"
+                variant="multi-line"
+                plot-size="lg"
+                fill
+                :seed="sceneTrendSeed"
+                :labels="chartLabels"
+              />
+            </div>
+          </div>
+          <rank-card-list
+            variant="single"
+            :scrollable="false"
+            :items="sceneRanks"
+            :expanded-index="expandedScene"
+            :detail-columns="4"
+            :show-detail-export="false"
+            @toggle="toggleScene"
+            @export="onSceneExport"
+            @detail-export="onSceneDetailExport"
           />
         </div>
-        <rank-card-list
-          variant="single"
-          :scrollable="false"
-          :items="sceneRanks"
-          :expanded-index="expandedScene"
-          :detail-columns="4"
-          :show-detail-export="false"
-          @toggle="toggleScene"
-          @export="onSceneExport"
-          @detail-export="onSceneDetailExport"
-        />
       </template>
 
       <div v-else class="person-block">
@@ -113,6 +166,7 @@ import {
   sceneCards,
   drillTabs,
   orgRankItems,
+  orgLevels,
   riskPersons,
   buildSceneRankItems,
   sceneTables
@@ -138,6 +192,15 @@ function downloadCsv(fileName, header, rows) {
 
 export default {
   name: 'LeakagePanel',
+  props: {
+    variant: {
+      type: String,
+      default: 'v1',
+      validator(v) {
+        return v === 'v1' || v === 'v2'
+      }
+    }
+  },
   data() {
     return {
       store,
@@ -172,6 +235,25 @@ export default {
     },
     chartLabels() {
       return dateLabels(store)
+    },
+    orgTrendSeed() {
+      return demoSeed(store, { compare: 'leak-org-trend' })
+    },
+    orgTrendTitle() {
+      const level = this.store.orgLevel
+      let scope = (orgLevels.find((item) => item.id === level) || {}).label || '物流总部'
+      if (level === 'province' && this.store.province) scope = this.store.province + '省区'
+      else if (level === 'line' && this.store.line) scope = this.store.line
+      else if (level === 'c1' && this.store.c1Dept) scope = this.store.c1Dept
+      return scope + '异常人数与影响金额趋势'
+    },
+    sceneTrendSeed() {
+      return demoSeed(store, { scene: this.store.scene, compare: 'leak-scene-trend' })
+    },
+    sceneTrendTitle() {
+      const hit = this.sceneCardItems.find((item) => item.id === this.store.scene)
+      const name = (hit && hit.title) || '在岗异常'
+      return name + '月度风险趋势'
     },
     orgAllRanks() {
       return withSeed(orgRankItems, store)
@@ -326,16 +408,20 @@ export default {
   min-height: 210px;
 }
 .inspect-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px;
   background: #f8f9fd;
+  box-sizing: border-box;
 }
 .chart-card {
   background: #fff;
 }
-.inspect-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
+.inspect-card.is-v2 {
+  background: #f8faff;
+  border: 0;
+  padding: 12px 24px;
 }
 .inspect-kpis {
   display: flex;
@@ -351,6 +437,10 @@ export default {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+/* 相对卡片边缘左右 12px（卡片左右 padding 24px，本行回拉 12px） */
+.inspect-card.is-v2 .handle-row {
+  margin: 0 -12px;
+}
 .handle-box {
   background: #fff;
   border-radius: 8px;
@@ -359,16 +449,60 @@ export default {
   flex-direction: column;
   gap: 8px;
 }
+.inspect-card.is-v2 .handle-box {
+  background: #fff;
+}
 .chart-card {
-  padding: 14px 16px;
+  padding: 12px;
   min-height: 210px;
   display: flex;
   align-items: stretch;
+  box-sizing: border-box;
 }
 .drill {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+.drill-chart-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px 12px;
+  border-radius: 8px;
+  background: #fff;
+  box-sizing: border-box;
+}
+.drill-chart-panel >>> .board-title.lv-1 .text {
+  font-family: 'PingFang SC', 'PingFang SC Regular', 'Microsoft YaHei', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--grey-02, #525765);
+}
+.drill-chart-panel .chart-box {
+  flex: 0 0 auto;
+  height: 300px;
+  min-height: 300px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 12px 0 0;
+  box-sizing: border-box;
+}
+.drill-chart-panel .chart-box >>> .chart-board {
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.scene-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
 }
 .scene-row {
   display: grid;

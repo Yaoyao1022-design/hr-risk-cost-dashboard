@@ -225,6 +225,8 @@ export default {
   min-width: 0;
   flex: 0 0 auto;
   height: 280px;
+  padding: 12px;
+  box-sizing: border-box;
   --chart-y-axis-width: 72px;
   --chart-board-plot-height: 220px;
 }

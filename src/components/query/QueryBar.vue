@@ -63,7 +63,7 @@
         </el-select>
       </label>
       <label class="field">
-        <span>月</span>
+        <span>选择月</span>
         <el-date-picker
           v-model="store.timeRange"
           class="field-select"

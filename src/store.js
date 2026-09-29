@@ -4,6 +4,8 @@ const params = typeof location !== 'undefined' ? new URLSearchParams(location.se
 
 export const store = Vue.observable({
   theme: params && params.get('theme') === 'leak' ? 'leak' : 'labor',
+  /** v1=原版大卡切换（成本诊断）；v2=新版 bg-card Tab（成本诊断新） */
+  layoutVersion: (params && params.get('layout') === 'v2') ? 'v2' : 'v1',
   scene: (params && params.get('scene')) || 'onjob',
   drillTab: 'org',
   orgLevel: 'hq',
@@ -41,6 +43,9 @@ export const actions = {
     store.selectedPerson = null
     store.selectedOrgItem = null
     store.selectedAiReport = null
+  },
+  setLayoutVersion(version) {
+    store.layoutVersion = version === 'v1' ? 'v1' : 'v2'
   },
   setScene(scene) {
     store.scene = scene

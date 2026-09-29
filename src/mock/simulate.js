@@ -71,7 +71,9 @@ export function demoSeed(store, extra = {}) {
     extra.scope,
     extra.subject,
     // 场景下探仅驱动下方列表，不参与全局种子
-    extra.scene
+    extra.scene,
+    extra.compare,
+    extra.mode
   ])
 }
 

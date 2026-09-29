@@ -138,6 +138,38 @@ export const navMenuData = [
     ]
   },
   {
+    key: 'cost-new',
+    label: '成本诊断新',
+    children: [
+      {
+        key: 'cockpit-v2',
+        label: '人力经营驾驶舱',
+        icon: 'Data4',
+        path: '/cockpit-v2',
+        screen: 'cockpit-v2'
+      },
+      {
+        key: 'board-v2',
+        label: '数据看板',
+        icon: 'Data2',
+        children: [
+          {
+            key: 'labor-roi-v2',
+            label: '人力成本ROI大屏',
+            path: '/labor-roi-v2',
+            screen: 'labor-roi-v2'
+          },
+          {
+            key: 'leak-screen-v2',
+            label: '跑冒滴漏大屏',
+            path: '/leak-screen-v2',
+            screen: 'leak-screen-v2'
+          }
+        ]
+      }
+    ]
+  },
+  {
     key: 'task',
     label: '任务中心',
     children: [

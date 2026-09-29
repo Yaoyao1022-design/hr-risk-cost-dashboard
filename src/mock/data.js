@@ -252,6 +252,174 @@ export const laborMatrix = [
   }
 ]
 
+/** 新版：指标对比分析（单指标卡片 / 多指标交叉） */
+export const indicatorSingleCards = [
+  {
+    key: 'cost',
+    title: '综合人工成本',
+    value: '13.093',
+    unit: '亿元',
+    help: true,
+    trends: [
+      { name: '同比', value: '5.13%', type: 'up' },
+      { name: '环比', value: '1.97%', type: 'down' }
+    ],
+    children: [
+      { key: 'fixed-cost', title: '固定综合人工成本', value: '1.18', unit: '亿元' },
+      { key: 'var-cost', title: '变动人工成本', value: '11.91', unit: '亿元' }
+    ]
+  },
+  {
+    key: 'income',
+    title: '收入',
+    value: '56.2',
+    unit: '亿元',
+    help: true,
+    trends: [
+      { name: '同比', value: '6.73%', type: 'up' },
+      { name: '环比', value: '7.43%', type: 'down' }
+    ],
+    children: [
+      { key: 'ops-income', title: '主营业务收入', value: '48.6', unit: '亿元' },
+      { key: 'other-income', title: '其他业务收入', value: '7.6', unit: '亿元' }
+    ]
+  },
+  {
+    key: 'people',
+    title: '人数',
+    value: '201,010',
+    unit: '人',
+    trends: [
+      { name: '同比', value: '2.63%', type: 'up' },
+      { name: '环比', value: '0.77%', type: 'down' }
+    ]
+  },
+  {
+    key: 'efficiency',
+    title: '人效',
+    value: '57,330',
+    unit: '元',
+    trends: [
+      { name: '同比', value: '3.81%', type: 'up' },
+      { name: '环比', value: '1.05%', type: 'up' }
+    ]
+  },
+  {
+    key: 'volume',
+    title: '业务量',
+    value: '5,280',
+    unit: '万单',
+    trends: [
+      { name: '同比', value: '9.12%', type: 'up' },
+      { name: '环比', value: '2.26%', type: 'down' }
+    ]
+  },
+  {
+    key: 'daily-volume',
+    title: '日均单量',
+    value: '1,760',
+    unit: '万单',
+    trends: [
+      { name: '同比', value: '4.21%', type: 'up' },
+      { name: '环比', value: '1.18%', type: 'down' }
+    ]
+  },
+  {
+    key: 'capita-cost',
+    title: '人均综合人工成本',
+    value: '13,093',
+    unit: '元/人/月',
+    trends: [
+      { name: '同比', value: '3.42%', type: 'up' },
+      { name: '环比', value: '0.86%', type: 'down' }
+    ]
+  },
+  {
+    key: 'unit-cost',
+    title: '单位综合人工成本',
+    value: '6.9',
+    unit: '元',
+    trends: [
+      { name: '同比', value: '2.15%', type: 'down' },
+      { name: '环比', value: '0.54%', type: 'up' }
+    ]
+  },
+  {
+    key: 'capita-fixed',
+    title: '人均固定人工成本',
+    value: '1,175',
+    unit: '元/人/月',
+    trends: [
+      { name: '同比', value: '1.82%', type: 'up' },
+      { name: '环比', value: '0.33%', type: 'down' }
+    ]
+  },
+  {
+    key: 'unit-fixed',
+    title: '单位固定人工成本',
+    value: '2.5',
+    unit: '元',
+    trends: [
+      { name: '同比', value: '1.06%', type: 'down' },
+      { name: '环比', value: '0.21%', type: 'up' }
+    ]
+  },
+  {
+    key: 'capita-var',
+    title: '人均变动人工成本',
+    value: '12,466',
+    unit: '元/人/月',
+    trends: [
+      { name: '同比', value: '4.58%', type: 'up' },
+      { name: '环比', value: '1.42%', type: 'down' }
+    ]
+  },
+  {
+    key: 'unit-var',
+    title: '单位变动人工成本',
+    value: '4.4',
+    unit: '元',
+    trends: [
+      { name: '同比', value: '2.74%', type: 'up' },
+      { name: '环比', value: '0.68%', type: 'down' }
+    ]
+  }
+]
+
+export const indicatorMultiPairs = [
+  { key: 'income-cost', label: '收入 VS 成本', desc: '观察收入规模与成本投入的增长匹配' },
+  { key: 'avg-income-cost', label: '单均收入 VS 单据成本', desc: '评估单票收入和单票成本的变动关系' },
+  { key: 'capita-avg', label: '人均成本 VS 单均成本', desc: '观察收入规模与成本投入的增长匹配' },
+  { key: 'fixed-people', label: '固定成本 VS 人数', desc: '观察收入规模与成本投入的增长匹配' },
+  { key: 'var-volume', label: '变动成本 VS 业务量', desc: '观察业务量变化对变动成本的影响' },
+  { key: 'avg-cost', label: '单均成本 VS 成本', desc: '评估单位成本与人效的协同变化' },
+  { key: 'var-eff', label: '变动成本 VS 人效', desc: '挂钩变动投入与人效表现的关系' }
+]
+
+/** 新版顶部费率卡：主指标 + 固定/变动费率 */
+export const laborRateCards = {
+  ytd: {
+    label: '26年08月YTD',
+    value: '85%',
+    trends: [
+      { name: '同比', value: '5.73%', type: 'up' },
+      { name: '环比', value: '1.27%', type: 'down' }
+    ],
+    fixed: { title: '固定费率', value: '80%', trends: [{ name: '同比', value: '6.23%', type: 'up' }] },
+    variable: { title: '变动费率', value: '94.4%', trends: [{ name: '同比', value: '5.13%', type: 'down' }] }
+  },
+  month: {
+    label: '26年08月',
+    value: '90.8%',
+    trends: [
+      { name: '同比', value: '5.83%', type: 'up' },
+      { name: '环比', value: '7.13%', type: 'down' }
+    ],
+    fixed: { title: '固定费率', value: '98%', trends: [{ name: '同比', value: '6.33%', type: 'up' }] },
+    variable: { title: '变动费率', value: '80.8%', trends: [{ name: '同比', value: '5.23%', type: 'down' }] }
+  }
+}
+
 export const chartDates = ['8.29', '8.30', '8.31', '9.1', '9.2', '9.3', '9.4', '9.5']
 
 export const laborDeptRows = [

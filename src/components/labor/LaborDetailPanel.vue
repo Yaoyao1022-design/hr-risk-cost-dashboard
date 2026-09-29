@@ -569,6 +569,8 @@ export default {
   height: 100%;
   display: flex;
   background: #fff;
+  padding: 12px;
+  box-sizing: border-box;
 }
 @media (max-width: 1100px) {
   .map-split,
