@@ -287,21 +287,19 @@ export default {
   isolation: isolate;
 }
 /*
- * 通栏 header + 末项选中时，组件库仍走「中间态」描边图，右侧多出一段翼形白边，
- * 与左侧过渡不对称（图2 橙框）。末项改用 closed-ending 同款描边图，保持 header 通栏。
- * 选择器需对齐 LUI 深度，否则 border-image / padding 会被组件库规则盖掉。
+ * 末项选中：设计稿为左右对称翼形白描边（与中间态一致），不要用 closed-ending 收口图。
+ * 去掉此前强制的 padding-right:20px / closed-ending，恢复 LUI 默认 is-active padding:0 50px
+ * 与 border-width:2px 50px 0 的双侧翼切片；描边图用本地中间态不透明资源。
  */
-.theme-tabs.el-tabs--bg-card >>> .el-tabs__header .el-tabs__nav-wrap .el-tabs__nav-scroll .el-tabs__nav .el-tabs__item:last-child {
-  padding-right: 20px;
-  border-top-right-radius: 12px;
-}
 .theme-tabs.el-tabs--bg-card >>> .el-tabs__header .el-tabs__nav-wrap .el-tabs__nav-scroll .el-tabs__nav .el-tabs__item:last-child.is-active {
-  padding-right: 20px;
+  padding: 0 50px;
+  border-top-right-radius: 0;
 }
 .theme-tabs.el-tabs--bg-card >>> .el-tabs__header .el-tabs__nav-wrap .el-tabs__nav-scroll .el-tabs__nav .el-tabs__item:last-child::after {
-  left: 0;
+  left: auto;
+  right: 0;
   width: 100%;
-  border-image-source: url('https://s2-relay.360buyimg.com/relay/c/cut/7/1af75eafd4529eedb33be8172418bc5e');
+  border-image-source: url('../assets/tabs/bg-card-middle-active.png');
 }
 /*
  * 首项选中 LUI 默认用半透明描边图（a2acfc6c），叠在 header 蓝灰底上会发灰发蓝。
