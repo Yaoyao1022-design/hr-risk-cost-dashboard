@@ -21,22 +21,13 @@
         :show-trends="true"
         :show-impact="false"
         :card-width="216"
-        :expanded-card-width="360"
+        :expanded-card-width="310"
         :gap="12"
+        child-select-mode="radio"
+        :selected-child-key="selectedChild"
         @select="onSelectSingleIndex"
+        @select-child="onSelectChild"
       />
-      <div class="chart-box">
-        <chart-board
-          :key="'single-' + selectedSingle"
-          variant="multi-line"
-          plot-size="md"
-          fill
-          :seed="singleChartSeed"
-          :labels="chartLabels"
-          :legend-items="singleChartLegend"
-          :y-axis-ticks="singleChartTicks"
-        />
-      </div>
     </template>
 
     <template v-else>
@@ -67,25 +58,48 @@
           </el-radio>
         </div>
       </div>
+      <ai-summary class="multi-summary" :text="multiSummary" highlight-numbers />
+    </template>
+
+    <div class="chart-block">
+      <div class="chart-ctrl">
+        <board-title
+          class="chart-ctrl__title"
+          :text="mode === 'single' ? activeMetricTitle : multiChartTitle"
+          :level="1"
+        />
+        <capsule-tabs
+          v-if="mode === 'single'"
+          :options="periodOptions"
+          :value="chartPeriod"
+          @input="chartPeriod = $event"
+        />
+        <capsule-tabs
+          v-else
+          :options="compareMetricOptions"
+          :value="compareMetric"
+          @input="compareMetric = $event"
+        />
+      </div>
       <div class="chart-box">
         <chart-board
-          :key="'multi-' + selectedPair"
+          :key="chartKey"
           variant="multi-line"
           plot-size="md"
           fill
-          :seed="multiChartSeed"
+          :seed="activeChartSeed"
           :labels="chartLabels"
-          :legend-items="multiChartLegend"
-          :y-axis-ticks="multiChartTicks"
+          :legend-items="activeChartLegend"
+          :y-axis-ticks="activeChartTicks"
         />
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
 <script>
 import { store, actions } from '@/store'
-import { indicatorSingleCards, indicatorMultiPairs } from '@/mock/data'
+import { indicatorSingleCards, indicatorMultiPairs, themeCards } from '@/mock/data'
 import { dateLabels, demoSeed, withSeed } from '@/mock/simulate'
 
 const CHART_COLORS = ['#3c6ef0', '#3ad3d9', '#435889', '#3ec986', '#ffd83d']
@@ -104,10 +118,22 @@ export default {
       actions,
       mode: 'single',
       selectedSingle: 'cost',
+      selectedChild: null,
       selectedPair: 'income-cost',
+      chartPeriod: 'month',
+      compareMetric: 'value',
       modeOptions: [
         { label: '单指标分析', value: 'single' },
         { label: '多指标交叉分析', value: 'multi' }
+      ],
+      periodOptions: [
+        { label: '年', value: 'year' },
+        { label: '月', value: 'month' }
+      ],
+      compareMetricOptions: [
+        { label: '当月值', value: 'value' },
+        { label: '同比', value: 'yoy' },
+        { label: '环比', value: 'mom' }
       ]
     }
   },
@@ -122,6 +148,18 @@ export default {
     selectedSingleCard() {
       return this.singleCards[this.selectedSingleIndex] || this.singleCards[0] || null
     },
+    selectedChildMeta() {
+      const card = this.selectedSingleCard
+      if (!card || !this.selectedChild || !card.children) return null
+      return card.children.find((c) => c.key === this.selectedChild) || null
+    },
+    activeMetricKey() {
+      return this.selectedChild || this.selectedSingle
+    },
+    activeMetricTitle() {
+      if (this.selectedChildMeta) return this.selectedChildMeta.title
+      return (this.selectedSingleCard && this.selectedSingleCard.title) || '指标'
+    },
     multiPairs() {
       return indicatorMultiPairs
     },
@@ -130,30 +168,42 @@ export default {
         this.multiPairs.find((item) => item.key === this.selectedPair) || this.multiPairs[0] || null
       )
     },
+    multiSummary() {
+      return (themeCards.labor && themeCards.labor.summary) || ''
+    },
+    multiChartTitle() {
+      const pair = this.selectedMultiPair
+      if (!pair || !pair.label) return '综合人工成本'
+      const left = pair.label.split(/\s*VS\s*/i)[0]
+      return (left && left.trim()) || '综合人工成本'
+    },
+    chartKey() {
+      const id = this.mode === 'single' ? this.activeMetricKey : this.selectedPair
+      const dim = this.mode === 'single' ? this.chartPeriod : this.compareMetric
+      return `${this.mode}-${id}-${dim}`
+    },
     chartLabels() {
       return dateLabels({
-        period: 'month',
+        period: this.mode === 'single' ? this.chartPeriod : 'month',
         timeRange: this.store.timeRange
       })
     },
-    singleChartSeed() {
-      return demoSeed(this.store, { compare: this.selectedSingle, mode: 'single' })
-    },
-    multiChartSeed() {
+    activeChartSeed() {
       return demoSeed(this.store, {
-        compare: this.selectedPair || 'none',
-        mode: 'multi'
+        compare: this.mode === 'single' ? this.activeMetricKey : this.selectedPair || 'none',
+        mode: this.mode,
+        period: this.mode === 'single' ? this.chartPeriod : this.compareMetric
       })
     },
-    singleChartLegend() {
-      const title = (this.selectedSingleCard && this.selectedSingleCard.title) || '指标'
-      return [
-        { label: title, color: CHART_COLORS[0] },
-        { label: '预测', color: CHART_COLORS[1] },
-        { label: '达成率', color: CHART_COLORS[2] }
-      ]
-    },
-    multiChartLegend() {
+    activeChartLegend() {
+      if (this.mode === 'single') {
+        const title = this.activeMetricTitle
+        return [
+          { label: title, color: CHART_COLORS[0] },
+          { label: '预测', color: CHART_COLORS[1] },
+          { label: '达成率', color: CHART_COLORS[2] }
+        ]
+      }
       const pair = this.selectedMultiPair
       const parts = pair && pair.label ? pair.label.split(/\s*VS\s*/i) : []
       const left = (parts[0] || '指标A').trim()
@@ -164,17 +214,33 @@ export default {
         { label: '匹配度', color: CHART_COLORS[2] }
       ]
     },
-    singleChartTicks() {
-      return buildTicks(this.singleChartSeed, this.tickBaseForKey(this.selectedSingle))
-    },
-    multiChartTicks() {
-      return buildTicks(this.multiChartSeed, this.tickBaseForKey(this.selectedPair))
+    activeChartTicks() {
+      const key = this.mode === 'single' ? this.activeMetricKey : this.selectedPair
+      const base = this.tickBaseForKey(key)
+      const scale = this.mode === 'multi' && this.compareMetric !== 'value' ? 0.35 : 1
+      return buildTicks(this.activeChartSeed, Math.max(40, Math.round(base * scale)))
+    }
+  },
+  watch: {
+    mode(next) {
+      if (next !== 'single') this.selectedChild = null
     }
   },
   methods: {
     onSelectSingleIndex(index) {
       const card = this.singleCards[index]
-      if (card) this.selectedSingle = card.key
+      if (!card) return
+      this.selectedSingle = card.key
+      this.selectedChild = null
+    },
+    onSelectChild(payload) {
+      if (!payload) return
+      if (payload.cardKey) this.selectedSingle = payload.cardKey
+      else if (payload.index != null) {
+        const card = this.singleCards[payload.index]
+        if (card) this.selectedSingle = card.key
+      }
+      this.selectedChild = payload.key != null ? payload.key : null
     },
     selectPair(key) {
       if (key) this.selectedPair = key
@@ -193,6 +259,10 @@ export default {
         'unit-fixed': 120,
         'capita-var': 190,
         'unit-var': 150,
+        'fixed-cost': 200,
+        'var-cost': 240,
+        'ops-income': 250,
+        'other-income': 120,
         'income-cost': 260,
         'avg-income-cost': 180,
         'capita-avg': 170,
@@ -234,6 +304,43 @@ export default {
   margin-left: auto;
 }
 .single-carousel {
+  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
+}
+.chart-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+.chart-ctrl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  min-height: 32px;
+  flex-shrink: 0;
+  gap: 12px;
+  box-sizing: border-box;
+}
+.chart-ctrl__title {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.chart-ctrl__title >>> .text {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+  color: var(--grey-02, #525765);
+}
+.chart-ctrl >>> .capsule-tabs {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.multi-summary {
   flex-shrink: 0;
   width: 100%;
   min-width: 0;

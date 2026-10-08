@@ -265,7 +265,7 @@ export const indicatorSingleCards = [
       { name: '环比', value: '1.97%', type: 'down' }
     ],
     children: [
-      { key: 'fixed-cost', title: '固定综合人工成本', value: '1.18', unit: '亿元' },
+      { key: 'fixed-cost', title: '固定人工成本', value: '1.18', unit: '亿元' },
       { key: 'var-cost', title: '变动人工成本', value: '11.91', unit: '亿元' }
     ]
   },
@@ -761,24 +761,42 @@ export const sceneCards = [
 ]
 
 const sceneRankMetrics = [
-  { label: '异常任务数', value: '86,666', unit: '人' },
-  { label: '异常任务数', value: '90,000', unit: '人' },
-  { label: '异常任务数', value: '-50.98%', tone: 'success' },
-  { label: '异常任务数', value: '128,990', unit: '万' },
-  { label: '异常任务数', value: '-50.98%', tone: 'success' }
+  { label: '当月人数', value: '86,666', unit: '人' },
+  { label: '上月人数', value: '90,000', unit: '人' },
+  { label: '数据趋势', value: '-50.98%', tone: 'success' },
+  { label: '影响金额', value: '128,990', unit: '万' },
+  { label: '数据趋势', value: '-50.98%', tone: 'success' }
 ]
 
-const sceneChildMetric = [{ title: '异常任务数', value: '1,234', unit: '万元', tone: 'danger' }]
+const sceneChildMetric = [{ title: '挽损金额', value: '1,234', unit: '万元', tone: 'danger' }]
 
-function sceneChildren(posts) {
-  return posts.map((title, index) => ({
-    index: index + 1,
-    title,
-    extraLabel: '64条异常',
-    extraTone: 'error',
-    extraShowIcon: true,
-    metrics: sceneChildMetric
-  }))
+const sceneL3Metrics = [
+  { title: '三级指标', value: '86', unit: '条' },
+  { title: '三级指标', value: '123', unit: '条' },
+  { title: '三级指标', value: '2,222', unit: '条' },
+  { title: '三级指标', value: '9,999', unit: '条' }
+]
+
+function sceneChildren(posts, options) {
+  const withL3 = !!(options && options.withL3)
+  return posts.map((title, index) => {
+    const child = {
+      index: index + 1,
+      title,
+      extraLabel: '64条异常',
+      extraTone: 'error',
+      extraShowIcon: true,
+      metrics: sceneChildMetric
+    }
+    // 仅需要演示时，给首个二级挂三级
+    if (withL3 && index === 0) {
+      child.children = sceneL3Metrics.map((m, mi) => ({
+        ...m,
+        value: String(86 + mi * 41)
+      }))
+    }
+    return child
+  })
 }
 
 const SCENE_RANK_TITLES = [
@@ -799,13 +817,22 @@ const SCENE_RANK_POSTS = {
   bonus: ['分拣', '销售支持', '司机', '仓内']
 }
 
-/** 人脸识别异常：二级 6 项，一行展示 4 个 */
+/** 人脸识别异常（top2）：二级 >5，折行宫格演示 */
 const SCENE_FACE_POSTS = {
-  onjob: ['大件干线专职司机', '服务（安装工程师）', '仓内操作', '配送员', '分拣员', '装卸工'],
-  efficiency: ['分拣', '装卸', '调度', '质控', '仓内操作', '配送员'],
-  input: ['外包', '临时工', '编制外', '加班投入', '劳务派遣', '兼职投入'],
-  leave: ['骨干司机', '班组长', '客服', '质控', '仓内操作', '配送员'],
-  bonus: ['分拣', '销售支持', '司机', '仓内', '装卸', '调度']
+  onjob: [
+    '大件干线专职司机',
+    '服务（安装工程师）',
+    '仓内操作',
+    '配送员',
+    '分拣员',
+    '装卸工',
+    '调度员',
+    '质控员'
+  ],
+  efficiency: ['分拣', '装卸', '调度', '质控', '仓内操作', '配送员', '司机', '客服'],
+  input: ['外包', '临时工', '编制外', '加班投入', '劳务派遣', '兼职投入', '正式工', '实习生'],
+  leave: ['骨干司机', '班组长', '客服', '质控', '仓内操作', '配送员', '分拣', '调度'],
+  bonus: ['分拣', '销售支持', '司机', '仓内', '装卸', '调度', '客服', '质控']
 }
 
 export function buildSceneRankItems(scene) {
@@ -817,14 +844,28 @@ export function buildSceneRankItems(scene) {
       title,
       metrics: sceneRankMetrics
     }
-    // 最后一条仅一级数据，不支持展开
-    if (index === SCENE_RANK_TITLES.length - 1) return item
-    if (title === '人脸识别异常') {
-      item.children = sceneChildren(facePosts)
+    // top5：仅一级，不展开
+    if (index === 4) return item
+    // top1：4 个二级均分，首个可三级展开
+    if (index === 0) {
+      item.children = sceneChildren(posts, { withL3: true })
       return item
     }
-    // 首条多子项；其余演示「仅一组数据」横排样式
-    item.children = sceneChildren(index === 0 ? posts : posts.slice(0, 1))
+    // top2：>5 折行宫格，无三级
+    if (index === 1) {
+      item.children = sceneChildren(facePosts, { withL3: false })
+      return item
+    }
+    // top3：仅 1 个二级（整行横排样式）
+    if (index === 2) {
+      item.children = sceneChildren(posts.slice(0, 1), { withL3: false })
+      return item
+    }
+    // top4：3 个二级均分，无三级
+    if (index === 3) {
+      item.children = sceneChildren(posts.slice(0, 3), { withL3: false })
+      return item
+    }
     return item
   })
 }
