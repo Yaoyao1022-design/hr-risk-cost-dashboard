@@ -74,32 +74,34 @@
 
     <!-- 新版：费率卡 + 综合费率趋势 + 指标对比 -->
     <template v-else>
-      <div class="rate-row">
-        <div
-          v-for="card in rateCardList"
-          :key="card.key"
-          class="rate-group"
-        >
-          <metric-block
-            class="rate-group__primary"
-            variant="l1-h"
-            show-icon
-            icon-name="安全"
-            help
-            tone="primary"
-            :title="card.label"
-            :value="card.value"
-            :trends="card.trends"
-            trends-layout="horizontal"
-          />
-          <metric-group
-            class="rate-group__secondary"
-            layout="horizontal"
-            variant="l3-t-h"
-            nowrap
-            :show-divider="false"
-            :items="rateSubItems(card)"
-          />
+      <div class="rate-sticky" :class="{ 'is-stuck': rateStuck }">
+        <div class="rate-row">
+          <div
+            v-for="card in rateCardList"
+            :key="card.key"
+            class="rate-group"
+          >
+            <metric-block
+              class="rate-group__primary"
+              variant="l1-h"
+              show-icon
+              icon-name="安全"
+              help
+              tone="primary"
+              :title="card.label"
+              :value="card.value"
+              :trends="card.trends"
+              trends-layout="horizontal"
+            />
+            <metric-group
+              class="rate-group__secondary"
+              layout="horizontal"
+              variant="l3-t-h"
+              nowrap
+              :show-divider="false"
+              :items="rateSubItems(card)"
+            />
+          </div>
         </div>
       </div>
 
@@ -157,6 +159,7 @@ export default {
     return {
       store,
       actions,
+      rateStuck: false,
       matrixScope: 'ytd',
       chartPeriod: 'month',
       chartMetric: 'rate',
@@ -170,9 +173,21 @@ export default {
       ],
       chartOptions: [
         { label: '综合人工成本费率', value: 'rate' },
-        { label: '综合人工成本', value: 'cost' },
-        { label: '收入', value: 'income' }
+        { label: '固定费率', value: 'fixed' },
+        { label: '变动费率', value: 'variable' }
       ]
+    }
+  },
+  mounted() {
+    this.bindRateSticky()
+  },
+  beforeDestroy() {
+    this.unbindRateSticky()
+  },
+  watch: {
+    variant() {
+      this.unbindRateSticky()
+      this.$nextTick(() => this.bindRateSticky())
     }
   },
   computed: {
@@ -218,6 +233,42 @@ export default {
           trends: card.variable.trends || []
         }
       ]
+    },
+    bindRateSticky() {
+      if (this.variant !== 'v2') return
+      this._dashEl = this.$el && this.$el.closest ? this.$el.closest('.dashboard') : null
+      if (!this._dashEl) return
+      this._onDashScroll = () => this.syncRateStuck()
+      this._dashEl.addEventListener('scroll', this._onDashScroll, { passive: true })
+      this.syncRateStuck()
+    },
+    unbindRateSticky() {
+      if (this._dashEl && this._onDashScroll) {
+        this._dashEl.removeEventListener('scroll', this._onDashScroll)
+      }
+      if (this._dashEl) this._dashEl.classList.remove('is-rate-stuck')
+      this._dashEl = null
+      this._onDashScroll = null
+      this.rateStuck = false
+    },
+    syncRateStuck() {
+      if (!this._dashEl || this.variant !== 'v2') {
+        this.rateStuck = false
+        if (this._dashEl) this._dashEl.classList.remove('is-rate-stuck')
+        return
+      }
+      const sticky = this.$el.querySelector('.rate-sticky')
+      if (!sticky) {
+        this.rateStuck = false
+        this._dashEl.classList.remove('is-rate-stuck')
+        return
+      }
+      const filter = this._dashEl.querySelector('.dashboard__filter')
+      const filterH = filter ? filter.getBoundingClientRect().height : 56
+      const dashTop = this._dashEl.getBoundingClientRect().top
+      const stickyTop = sticky.getBoundingClientRect().top
+      this.rateStuck = stickyTop <= dashTop + filterH + 1
+      this._dashEl.classList.toggle('is-rate-stuck', this.rateStuck)
     },
     goTaskCenter() {
       if (typeof location !== 'undefined') location.hash = '/task-center'
@@ -360,6 +411,21 @@ export default {
   background: #fff;
   padding: 12px;
   box-sizing: border-box;
+}
+.rate-sticky {
+  position: sticky;
+  top: var(--dashboard-sticky-filter-height, 56px);
+  z-index: 30;
+  margin: -12px -12px -12px;
+  padding: 12px;
+  background: #fff;
+  box-sizing: border-box;
+}
+/* 吸顶后与筛选条拼成同一模块：底左右圆角 8px + 外阴影；与筛选间距减半 */
+.rate-sticky.is-stuck {
+  padding-top: 2px;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 12px rgba(35, 37, 43, 0.1);
 }
 .rate-row {
   display: grid;

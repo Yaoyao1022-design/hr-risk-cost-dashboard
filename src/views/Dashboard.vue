@@ -237,6 +237,7 @@ export default {
 
 <style scoped>
 .dashboard {
+  --dashboard-sticky-filter-height: 56px;
   position: relative;
   isolation: isolate;
   display: flex;
@@ -266,6 +267,14 @@ export default {
 }
 .dashboard__filter.is-stuck ::v-deep .query-bar {
   box-shadow: 0 2px 12px rgba(35, 37, 43, 0.1);
+}
+/* 费率卡一同吸顶时：与筛选合成一个白底模块 */
+.dashboard.is-rate-stuck .dashboard__filter {
+  background: #fff;
+}
+.dashboard.is-rate-stuck .dashboard__filter.is-stuck ::v-deep .query-bar {
+  border-radius: 8px 8px 0 0;
+  box-shadow: none;
 }
 .dashboard__body {
   position: relative;
@@ -321,6 +330,8 @@ export default {
   border-radius: 0 0 12px 12px;
   padding: 12px;
   box-sizing: border-box;
+  /* 默认 overflow:hidden 会阻断子级 sticky（费率卡吸顶） */
+  overflow: visible;
 }
 .v2-pane {
   display: flex;

@@ -139,6 +139,18 @@
       </template>
 
       <div v-else class="person-block">
+        <div class="drill-chart-panel">
+          <div class="chart-box">
+            <chart-board
+              :key="'person-trend-' + store.queryNonce"
+              variant="multi-line"
+              plot-size="lg"
+              fill
+              :seed="personTrendSeed"
+              :labels="chartLabels"
+            />
+          </div>
+        </div>
         <rank-grid-list
           class="person-grid"
           :columns="2"
@@ -254,6 +266,9 @@ export default {
       const hit = this.sceneCardItems.find((item) => item.id === this.store.scene)
       const name = (hit && hit.title) || '在岗异常'
       return name + '月度风险趋势'
+    },
+    personTrendSeed() {
+      return demoSeed(store, { compare: 'leak-person-trend' })
     },
     orgAllRanks() {
       return withSeed(orgRankItems, store)

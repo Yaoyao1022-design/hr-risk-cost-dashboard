@@ -44,10 +44,25 @@
           @keydown.enter.prevent="selectPair(pair.key)"
           @keydown.space.prevent="selectPair(pair.key)"
         >
-          <span class="multi-card__text">
+          <div class="multi-card__main">
             <span class="multi-card__label">{{ pair.label }}</span>
-            <span v-if="pair.desc" class="multi-card__desc">{{ pair.desc }}</span>
-          </span>
+            <span v-if="pair.tag" class="multi-card__tag">{{ pair.tag }}</span>
+            <el-tooltip
+              v-if="pair.helpText"
+              :content="pair.helpText"
+              placement="top"
+              effect="dark"
+            >
+              <button
+                type="button"
+                class="multi-card__help"
+                aria-label="指标说明"
+                @click.stop
+              >
+                <span class="multi-card__help-icon" :style="helpIconStyle" aria-hidden="true" />
+              </button>
+            </el-tooltip>
+          </div>
           <el-radio
             class="multi-card__check"
             v-model="selectedPair"
@@ -58,7 +73,18 @@
           </el-radio>
         </div>
       </div>
-      <ai-summary class="multi-summary" :text="multiSummary" highlight-numbers />
+      <div
+        v-if="multiConclusion"
+        class="multi-conclusion"
+        :class="'is-' + multiConclusion.status"
+      >
+        <img
+          class="multi-conclusion__icon"
+          :src="conclusionIcon(multiConclusion.status)"
+          alt=""
+        />
+        <p class="multi-conclusion__text">{{ multiConclusion.text }}</p>
+      </div>
     </template>
 
     <div class="chart-block">
@@ -99,10 +125,19 @@
 
 <script>
 import { store, actions } from '@/store'
-import { indicatorSingleCards, indicatorMultiPairs, themeCards } from '@/mock/data'
+import { indicatorSingleCards, indicatorMultiPairs } from '@/mock/data'
 import { dateLabels, demoSeed, withSeed } from '@/mock/simulate'
+import questionIcon from 'jdl-board-kit/src/assets/icons/board/icon-question.svg'
+import signalGreen from '@/assets/icons/icon-signal-green.png'
+import signalOrange from '@/assets/icons/icon-signal-orange.png'
+import signalRed from '@/assets/icons/icon-signal-red.png'
 
 const CHART_COLORS = ['#3c6ef0', '#3ad3d9', '#435889', '#3ec986', '#ffd83d']
+const SIGNAL_ICONS = {
+  green: signalGreen,
+  orange: signalOrange,
+  red: signalRed
+}
 
 function buildTicks(seed, maxBase) {
   const max = Math.max(40, Math.round(maxBase + ((seed % 7) - 3) * (maxBase / 20)))
@@ -122,6 +157,10 @@ export default {
       selectedPair: 'income-cost',
       chartPeriod: 'month',
       compareMetric: 'value',
+      helpIconStyle: {
+        WebkitMaskImage: `url("${questionIcon}")`,
+        maskImage: `url("${questionIcon}")`
+      },
       modeOptions: [
         { label: '单指标分析', value: 'single' },
         { label: '多指标交叉分析', value: 'multi' }
@@ -168,8 +207,9 @@ export default {
         this.multiPairs.find((item) => item.key === this.selectedPair) || this.multiPairs[0] || null
       )
     },
-    multiSummary() {
-      return (themeCards.labor && themeCards.labor.summary) || ''
+    multiConclusion() {
+      const pair = this.selectedMultiPair
+      return (pair && pair.conclusion) || null
     },
     multiChartTitle() {
       const pair = this.selectedMultiPair
@@ -245,6 +285,9 @@ export default {
     selectPair(key) {
       if (key) this.selectedPair = key
     },
+    conclusionIcon(status) {
+      return SIGNAL_ICONS[status] || SIGNAL_ICONS.green
+    },
     tickBaseForKey(key) {
       const map = {
         cost: 250,
@@ -264,11 +307,10 @@ export default {
         'ops-income': 250,
         'other-income': 120,
         'income-cost': 260,
-        'avg-income-cost': 180,
-        'capita-avg': 170,
         'fixed-people': 210,
         'var-volume': 240,
         'avg-cost': 160,
+        'avg-eff': 180,
         'var-eff': 200
       }
       return map[key] || 220
@@ -340,27 +382,22 @@ export default {
   flex-shrink: 0;
   margin-left: auto;
 }
-.multi-summary {
+.multi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   flex-shrink: 0;
   width: 100%;
-  min-width: 0;
-}
-.multi-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  flex-shrink: 0;
 }
 .multi-card {
   box-sizing: border-box;
   position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 12px;
-  width: 269px;
-  flex: 1 1 269px;
-  max-width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
   background: #f8f9fd;
   border: 1px solid #e7eeff;
   border-radius: 8px;
@@ -385,11 +422,71 @@ export default {
   outline: 2px solid var(--blue-06, #3c6ef0);
   outline-offset: 2px;
 }
-.multi-card__check {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+.multi-card__main {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding-right: 4px;
+  box-sizing: border-box;
+}
+.multi-card__label {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--grey-01, #23252b);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+}
+.multi-card__tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--grey-05, #e4e5e9);
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--grey-03, #868d9f);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.multi-card__help {
+  flex-shrink: 0;
+  width: 14px;
   height: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--grey-03, #868d9f);
+}
+.multi-card__help-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+.multi-card__check {
+  flex-shrink: 0;
+  height: 16px;
   line-height: 1;
   margin: 0;
 }
@@ -403,26 +500,41 @@ export default {
   width: 14px;
   height: 14px;
 }
-.multi-card__text {
+.multi-conclusion {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 4px;
-  min-width: 0;
   width: 100%;
-  padding-right: 22px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: #f8f9fd;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
-.multi-card__label {
-  color: var(--grey-01, #23252b);
-  font-size: 14px;
-  line-height: 22px;
-  font-weight: 500;
+.multi-conclusion__icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  object-fit: contain;
 }
-.multi-card__desc {
-  color: var(--grey-03, #868d9f);
+.multi-conclusion__text {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 12px;
   line-height: 18px;
+  font-weight: 400;
+}
+/* 设计稿：红/橙整句着色；绿为中性灰 */
+.multi-conclusion.is-red .multi-conclusion__text {
+  color: #fc3737;
+}
+.multi-conclusion.is-green .multi-conclusion__text {
+  color: #868d9f;
+}
+.multi-conclusion.is-orange .multi-conclusion__text {
+  color: #ff7700;
 }
 .chart-box {
   flex: 0 0 auto;
@@ -443,8 +555,13 @@ export default {
   min-height: 0;
 }
 @media (max-width: 1100px) {
-  .multi-card {
-    flex-basis: calc(50% - 4px);
+  .multi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .multi-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

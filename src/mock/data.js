@@ -386,14 +386,68 @@ export const indicatorSingleCards = [
   }
 ]
 
+/** 多指标交叉：6 卡（标题 + 分类标签 + 问号说明 + 结论亮灯） */
 export const indicatorMultiPairs = [
-  { key: 'income-cost', label: '收入 VS 成本', desc: '观察收入规模与成本投入的增长匹配' },
-  { key: 'avg-income-cost', label: '单均收入 VS 单据成本', desc: '评估单票收入和单票成本的变动关系' },
-  { key: 'capita-avg', label: '人均成本 VS 单均成本', desc: '观察收入规模与成本投入的增长匹配' },
-  { key: 'fixed-people', label: '固定成本 VS 人数', desc: '观察收入规模与成本投入的增长匹配' },
-  { key: 'var-volume', label: '变动成本 VS 业务量', desc: '观察业务量变化对变动成本的影响' },
-  { key: 'avg-cost', label: '单均成本 VS 成本', desc: '评估单位成本与人效的协同变化' },
-  { key: 'var-eff', label: '变动成本 VS 人效', desc: '挂钩变动投入与人效表现的关系' }
+  {
+    key: 'income-cost',
+    label: '收入 VS 成本',
+    tag: '增长质量',
+    helpText: '观察收入规模与成本投入的增长是否匹配',
+    conclusion: {
+      status: 'green',
+      text: '增速正常，趋势正常，收入与成本增长节奏基本匹配，整体运行平稳'
+    }
+  },
+  {
+    key: 'var-eff',
+    label: '人均变动成本 VS 人效',
+    tag: '人员投入',
+    helpText: '观察人均变动成本与人效的联动关系',
+    conclusion: {
+      status: 'orange',
+      text: '增速倒挂，人均变动成本上升快于人效改善，需关注人员投入产出'
+    }
+  },
+  {
+    key: 'fixed-people',
+    label: '固定成本 VS 人数',
+    tag: '成本投入',
+    helpText: '观察固定成本与人数规模的匹配程度',
+    conclusion: {
+      status: 'red',
+      text: '恶化中，固定成本增速高于人数变化，固定投入风险上升'
+    }
+  },
+  {
+    key: 'avg-cost',
+    label: '单均成本 VS 成本',
+    tag: '增长质量',
+    helpText: '评估单位成本与总成本的协同变化',
+    conclusion: {
+      status: 'green',
+      text: '增速正常，单均成本与总成本变动方向一致，结构相对健康'
+    }
+  },
+  {
+    key: 'avg-eff',
+    label: '单均成本 VS 人效',
+    tag: '人员投入',
+    helpText: '观察单均成本与人效的协同变化',
+    conclusion: {
+      status: 'orange',
+      text: '增速倒挂，单均成本抬升伴随人效承压，建议复核作业效率'
+    }
+  },
+  {
+    key: 'var-volume',
+    label: '变动成本 VS 业务量',
+    tag: '成本投入',
+    helpText: '观察业务量变化对变动成本的影响',
+    conclusion: {
+      status: 'green',
+      text: '增速正常，变动成本随业务量同向变化，弹性关系正常'
+    }
+  }
 ]
 
 /** 新版顶部费率卡：主指标 + 固定/变动费率 */
