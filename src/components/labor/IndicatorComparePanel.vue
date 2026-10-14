@@ -531,7 +531,7 @@ export default {
   color: #fc3737;
 }
 .multi-conclusion.is-green .multi-conclusion__text {
-  color: #868d9f;
+  color: #12b35d;
 }
 .multi-conclusion.is-orange .multi-conclusion__text {
   color: #ff7700;
